@@ -26,6 +26,10 @@ const colorseq = [
 
 class ThemeManager {
 
+  static setAppTheme(theme){
+    ThemeManager.qlikTheme = theme;
+  }
+
   static getPicassoTheme(){
     var style = {
       '$font-family': '"QlikView Sans", sans-serif',
@@ -33,6 +37,7 @@ class ThemeManager {
     };
 
     return style;
+
   }
 
   static colorFromPicker(picker){
@@ -44,11 +49,29 @@ class ThemeManager {
   }
 
   static colorFromTheme(index){
-    return colors[index];
+    console.log("Return Color For Index:" + index);
+    console.log(ThemeManager.qlikTheme);
+    if(typeof ThemeManager.qlikTheme != 'undefined'){
+      return ThemeManager.qlikTheme.properties.palettes.ui[0].colors[index - 1];
+    }else{
+      return colors[index];
+    }
   }
 
-  static colorFromSeq(index, total){
-    return colorseq[index];
+  static colorFromSeq(index){
+    if(typeof ThemeManager.qlikTheme != 'undefined'){
+      return ThemeManager.qlikTheme.properties.palettes.data[0].scale[1][index];
+    }else{
+      return colorseq[index];
+    }
+  }
+
+  static colorOther(){
+    if(typeof ThemeManager.qlikTheme != 'undefined'){
+      return ThemeManager.qlikTheme.properties.dataColors.othersColor;
+    }else{
+      return "#c3c3c3";
+    }
   }
 }
 

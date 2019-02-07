@@ -46,7 +46,19 @@ var colorsAndLegend = {
         },
         subtotalColor: {
           ref: "color.subtotal.paletteColor",
-          translation: "properties.waterfall.color.subtotalColor",
+          label:"Start Value Color",
+          type: "object",
+          component: "color-picker",
+          dualOutput: true,
+          defaultValue: {
+            index: -1,
+            color: "#c3c3c3"
+          },
+          show: (a) => !a.color.auto
+        },
+        subtotalEndColor: {
+          ref: "color.subtotalEnd.paletteColor",
+          label:"End Value Color",
           type: "object",
           component: "color-picker",
           dualOutput: true,
@@ -166,6 +178,65 @@ var s = {
       snapshot: {
         tid: "property-dataPoints"
       }
+    },
+    names:{
+      type:"items",
+      items:{
+        showLabels: {
+          ref: "labelsshow",
+          type: "boolean",
+          label: "Labels",
+          component: "switch",
+          defaultValue: true,
+          options: [{
+            value: true,
+            translation: "Common.Auto"
+          }, {
+            value: false,
+            translation: "Common.Custom"
+          }]
+        },
+        startName: {
+          ref: "startName",
+          type: "string",
+          label: "Start Value Label",
+          expression:"optional",
+          defaultValue: "Start Value",
+          show: function e(t) {
+            return !t.labelsshow
+          }
+        },
+        endName: {
+          ref: "endName",
+          type: "string",
+          label: "End Value Label",
+          expression:"optional",
+          defaultValue: "End Value",
+          show: function e(t) {
+            return !t.labelsshow
+          }
+        },
+        posName: {
+          ref: "posName",
+          type: "string",
+          label: "Positive Label",
+          expression:"optional",
+          defaultValue: "Positive Variance",
+          show: function e(t) {
+            return !t.labelsshow
+          }
+        },
+        negName: {
+          ref: "negName",
+          type: "string",
+          label: "Negative Label",
+          expression:"optional",
+          defaultValue: "Negative Variance",
+          show: function e(t) {
+            return !t.labelsshow
+          }
+        }
+      }
     }
   }
 };
@@ -216,7 +287,7 @@ let about = {
     about1a: {
       type: "string",
       component: "text",
-      label: "BETA: v0.1.0"
+      label: "v1.0.0"
     },
     about2: {
       type: "string",
@@ -226,7 +297,7 @@ let about = {
     about3: {
       type: "string",
       component: "text",
-      label: "A Bridge Waterfall chart for displaying variance between two metrics, walking through a set of dimension values."
+      label: "A Variance Waterfall chart for displaying variance between two metrics, walking through a set of dimension values."
     }
   }
 };
@@ -255,9 +326,15 @@ export default {
           },
           items: {
             variance: {
-              show: false,
+              show: (a, b) => {
+                if(b.properties.qHyperCubeDef.qMeasures[0] == a){
+                  return true;
+                }else{
+                  return false;
+                }
+              },
               type: "string",
-              label: "variance",
+              label: "Variance Formula",
               ref: "qAttributeExpressions.0.qExpression",
               expression: "always",
               defaultValue: (a, b) => {

@@ -15,6 +15,11 @@ var qlik = window.require('qlik');
 
 export default ['$scope', '$element', function($scope, $element) {
   $scope.qlik = qlik;
+  $scope.theme = null;
+
+  var app = qlik.currApp(this);
+
+
 
   picasso.use(pq);
 
@@ -28,8 +33,6 @@ export default ['$scope', '$element', function($scope, $element) {
     style: ThemeManager.getPicassoTheme()
   });
 
-  //console.log(bridgepicassospec());
-
   $scope.chart = $scope.pic.chart({
     element: $element.find('.lrp')[0]
   });
@@ -42,6 +45,15 @@ export default ['$scope', '$element', function($scope, $element) {
     console.log(layout);
 
     let up = {};
+    app.theme.getApplied().then(qTheme => {
+      console.log(qTheme);
+      $scope.theme = qTheme;
+      ThemeManager.setAppTheme($scope.theme);
+      up.settings = bridgepicassospec(layout);
+      $scope.chart.update(up);
+    });
+
+
     if(dataUpdate){
       console.log("Data Update");
       let hq = ConvertHypercube.convertHypercube($scope.layout.qHyperCube);

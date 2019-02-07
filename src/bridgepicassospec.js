@@ -7,8 +7,16 @@ import {
 
 export default function(layout) {
 
+  let labels = {
+    startvalue: layout.labelsshow ? "Start Value" : layout.startName,
+    endvalue: layout.labelsshow ? "End Value" : layout.endName,
+    negative: layout.labelsshow ? "Negative Variance" : layout.negName,
+    positive: layout.labelsshow ? "Positive Variance" : layout.posName
+  };
+
   let colors = {
-    subtotal: layout.color.auto ? ThemeManager.colorFromSeq(2) : ThemeManager.colorFromPicker(layout.color.subtotal.paletteColor.color),
+    startvalue: layout.color.auto ? ThemeManager.colorOther(2) : ThemeManager.colorFromPicker(layout.color.subtotal.paletteColor),
+    endvalue: layout.color.auto ? ThemeManager.colorOther(2) : ThemeManager.colorFromPicker(layout.color.subtotalEnd.paletteColor),
     negative: layout.color.auto ? ThemeManager.colorFromSeq(1) : ThemeManager.colorFromPicker(layout.color.negativeValue.paletteColor),
     positive: layout.color.auto ? ThemeManager.colorFromSeq(0) : ThemeManager.colorFromPicker(layout.color.positiveValue.paletteColor)
   };
@@ -23,7 +31,9 @@ export default function(layout) {
         type: 'linear',
         invert: true,
         expand: 0.01,
-        include: [0],
+        min:!layout.measureAxis.autoMinMax && (layout.measureAxis.minMax == 'min' || layout.measureAxis.minMax == 'minMax') ? layout.measureAxis.min : 0,
+        max:!layout.measureAxis.autoMinMax && (layout.measureAxis.minMax == 'max' || layout.measureAxis.minMax == 'minMax') ? layout.measureAxis.max : NaN,
+        //include: [],
         spacing: 0.5,
         ticks: {
           /*count:10*/
@@ -160,8 +170,11 @@ export default function(layout) {
             width: 0.75,
             minHeightPx: 2,
             fill: function(d) {
-              if (d.datum.value === -3 || d.datum.value === -4) {
-                return colors.subtotal;
+              console.log(d);
+              if (d.datum.value === -4){
+                return colors.startvalue;
+              }else if(d.datum.value === -5) {
+                return colors.endvalue;
               } else {
                 if (d.datum.var.value < 0) {
                   return colors.negative;
@@ -291,8 +304,8 @@ export default function(layout) {
       {
         scale: {
           type: 'categorical-color',
-          data: ['Start/End Value', 'Positive Variance', 'Negative Variance'],
-          range: [colors.subtotal, colors.positive, colors.negative]
+          data: [labels.startvalue, labels.positive, labels.negative, labels.endvalue],
+          range: [colors.startvalue, colors.positive, colors.negative, colors.endvalue]
         },
         type: 'legend-cat',
         dock: layout.legend.dock === "auto" ? "top" : layout.legend.dock,
@@ -342,6 +355,7 @@ export default function(layout) {
       },
       {
         key: 'rangex',
+        displayOrder:5,
         type: 'brush-range',
         settings: {
           brush: 'highlight',

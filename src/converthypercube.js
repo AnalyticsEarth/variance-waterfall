@@ -160,7 +160,7 @@ class ConvertHypercube {
       {
         qText:firstbarlabel.qFallbackTitle,
         qNum:"NaN",
-        qElemNumber:-3,
+        qElemNumber:-4,
         qState:"X"
       },
       {
@@ -190,7 +190,7 @@ class ConvertHypercube {
       {
         qText:lastbarlabel.qFallbackTitle,
         qNum:"NaN",
-        qElemNumber:-4,
+        qElemNumber:-5,
         qState:"X"
       },
       {

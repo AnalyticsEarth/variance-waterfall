@@ -12,9 +12,6 @@ import pq from 'picasso-plugin-q';
 
 export default window.define([], function() {
 
-  
-
-
   return {
     initialProperties: initialProperties,
     template: template,
