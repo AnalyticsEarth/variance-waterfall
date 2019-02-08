@@ -14,3 +14,15 @@ The extension requires 1 dimension and 2 measures; One measure for the starting 
 
 ### Example
 ![Example screenshot of variance waterfall chart in Qlik Sense](docs/variance-waterfall-example.png?raw=true)
+
+## Support
+
+The extension supports the following Qlik Sense functionality:
+- Responsive Design
+- Themes
+- Printing
+- Export
+- Snapshots
+- Dimension Selection
+
+The extension is rendered using the Picasso.js chart framework, for more information visit [Picasso.js](https://picassojs.com/)
