@@ -1,6 +1,6 @@
 {
-  "name": "bridge-waterfall",
-  "version": "0.1.0",
+  "name": "variance-waterfall",
+  "version": "1.0.0",
   "scripts": {
     "build-webpack": "qext-scripts -b",
     "watch-webpack": "qext-scripts -w",

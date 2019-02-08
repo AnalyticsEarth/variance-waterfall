@@ -16,10 +16,9 @@ var qlik = window.require('qlik');
 export default ['$scope', '$element', function($scope, $element) {
   $scope.qlik = qlik;
   $scope.theme = null;
+  $scope.updated = false;
 
-  var app = qlik.currApp(this);
-
-
+  $scope.app = qlik.currApp(this);
 
   picasso.use(pq);
 
@@ -34,30 +33,23 @@ export default ['$scope', '$element', function($scope, $element) {
   });
 
   $scope.chart = $scope.pic.chart({
-    element: $element.find('.lrp')[0]
+    element: $element.find('.lrp')[0],
+    updated: () => {
+      $scope.updated = true;
+    },
+    beforeUpdated: () => {
+      $scope.updated = false;
+    }
   });
 
   $scope.chartBrush = enableSelectionOnFirstDimension($scope, $scope.chart, 'highlight', $scope.layout);
 
 
-  $scope.updatedData = function(layout, mode, dataUpdate){
-
-    console.log(layout);
-
+  $scope.updatedData = async function(layout, mode, dataUpdate) {
     let up = {};
-    app.theme.getApplied().then(qTheme => {
-      console.log(qTheme);
-      $scope.theme = qTheme;
-      ThemeManager.setAppTheme($scope.theme);
-      up.settings = bridgepicassospec(layout);
-      $scope.chart.update(up);
-    });
 
-
-    if(dataUpdate){
-      console.log("Data Update");
+    if (dataUpdate) {
       let hq = ConvertHypercube.convertHypercube($scope.layout.qHyperCube);
-      console.log(hq);
       up.data = [{
         type: 'q',
         key: 'qHyperCube',
@@ -65,13 +57,12 @@ export default ['$scope', '$element', function($scope, $element) {
       }];
     }
 
-    if(mode === 'edit' || typeof $scope.chart.settings === 'undefined'){
-      console.log("Settings Update");
+    if (mode === 'edit' || typeof $scope.chart.settings === 'undefined') {
       up.settings = bridgepicassospec(layout);
     }
 
-    $scope.chart.update(up);
-      console.log("Update Complete");
+    let update = $scope.chart.update(up);
+    console.log($scope.updated);
   }
 
 }]

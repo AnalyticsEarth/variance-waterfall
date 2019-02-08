@@ -15,7 +15,7 @@ export default window.define([], function() {
   return {
     initialProperties: initialProperties,
     template: template,
-    support:support,
+    support: support,
     definition: definition,
     controller: controller,
     paint: paint,

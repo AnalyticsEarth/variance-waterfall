@@ -1,4 +1,3 @@
-
 const colors = [
   "rgba(0,0,0,0)",
   "#ffffff",
@@ -26,50 +25,50 @@ const colorseq = [
 
 class ThemeManager {
 
-  static setAppTheme(theme){
+  static setAppTheme(theme) {
     ThemeManager.qlikTheme = theme;
   }
 
-  static getPicassoTheme(){
+  static getPicassoTheme() {
     var style = {
       '$font-family': '"QlikView Sans", sans-serif',
-      '$font-color':"#595959"
+      '$font-color': "#595959"
     };
 
     return style;
 
   }
 
-  static colorFromPicker(picker){
-    if(picker.index === -1){
+  static colorFromPicker(picker) {
+    if (picker.index === -1) {
       return picker.color;
-    }else{
+    } else {
       return this.colorFromTheme(picker.index)
     }
   }
 
-  static colorFromTheme(index){
+  static colorFromTheme(index) {
     console.log("Return Color For Index:" + index);
     console.log(ThemeManager.qlikTheme);
-    if(typeof ThemeManager.qlikTheme != 'undefined'){
+    if (typeof ThemeManager.qlikTheme != 'undefined') {
       return ThemeManager.qlikTheme.properties.palettes.ui[0].colors[index - 1];
-    }else{
+    } else {
       return colors[index];
     }
   }
 
-  static colorFromSeq(index){
-    if(typeof ThemeManager.qlikTheme != 'undefined'){
+  static colorFromSeq(index) {
+    if (typeof ThemeManager.qlikTheme != 'undefined') {
       return ThemeManager.qlikTheme.properties.palettes.data[0].scale[1][index];
-    }else{
+    } else {
       return colorseq[index];
     }
   }
 
-  static colorOther(){
-    if(typeof ThemeManager.qlikTheme != 'undefined'){
+  static colorOther() {
+    if (typeof ThemeManager.qlikTheme != 'undefined') {
       return ThemeManager.qlikTheme.properties.dataColors.othersColor;
-    }else{
+    } else {
       return "#c3c3c3";
     }
   }

@@ -46,7 +46,7 @@ var colorsAndLegend = {
         },
         subtotalColor: {
           ref: "color.subtotal.paletteColor",
-          label:"Start Value Color",
+          label: "Start Value Color",
           type: "object",
           component: "color-picker",
           dualOutput: true,
@@ -58,7 +58,7 @@ var colorsAndLegend = {
         },
         subtotalEndColor: {
           ref: "color.subtotalEnd.paletteColor",
-          label:"End Value Color",
+          label: "End Value Color",
           type: "object",
           component: "color-picker",
           dualOutput: true,
@@ -179,9 +179,9 @@ var s = {
         tid: "property-dataPoints"
       }
     },
-    names:{
-      type:"items",
-      items:{
+    names: {
+      type: "items",
+      items: {
         showLabels: {
           ref: "labelsshow",
           type: "boolean",
@@ -200,7 +200,7 @@ var s = {
           ref: "startName",
           type: "string",
           label: "Start Value Label",
-          expression:"optional",
+          expression: "optional",
           defaultValue: "Start Value",
           show: function e(t) {
             return !t.labelsshow
@@ -210,7 +210,7 @@ var s = {
           ref: "endName",
           type: "string",
           label: "End Value Label",
-          expression:"optional",
+          expression: "optional",
           defaultValue: "End Value",
           show: function e(t) {
             return !t.labelsshow
@@ -220,7 +220,7 @@ var s = {
           ref: "posName",
           type: "string",
           label: "Positive Label",
-          expression:"optional",
+          expression: "optional",
           defaultValue: "Positive Variance",
           show: function e(t) {
             return !t.labelsshow
@@ -230,7 +230,7 @@ var s = {
           ref: "negName",
           type: "string",
           label: "Negative Label",
-          expression:"optional",
+          expression: "optional",
           defaultValue: "Negative Variance",
           show: function e(t) {
             return !t.labelsshow
@@ -297,7 +297,7 @@ let about = {
     about3: {
       type: "string",
       component: "text",
-      label: "A Variance Waterfall chart for displaying variance between two metrics, walking through a set of dimension values."
+      label: "A Waterfall chart for displaying variance between two metrics, walking through a set of dimension values."
     }
   }
 };
@@ -327,9 +327,9 @@ export default {
           items: {
             variance: {
               show: (a, b) => {
-                if(b.properties.qHyperCubeDef.qMeasures[0] == a){
+                if (b.properties.qHyperCubeDef.qMeasures[0] == a) {
                   return true;
-                }else{
+                } else {
                   return false;
                 }
               },

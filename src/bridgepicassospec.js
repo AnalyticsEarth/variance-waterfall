@@ -31,12 +31,10 @@ export default function(layout) {
         type: 'linear',
         invert: true,
         expand: 0.01,
-        min:!layout.measureAxis.autoMinMax && (layout.measureAxis.minMax == 'min' || layout.measureAxis.minMax == 'minMax') ? layout.measureAxis.min : 0,
-        max:!layout.measureAxis.autoMinMax && (layout.measureAxis.minMax == 'max' || layout.measureAxis.minMax == 'minMax') ? layout.measureAxis.max : NaN,
-        //include: [],
+        min: !layout.measureAxis.autoMinMax && (layout.measureAxis.minMax == 'min' || layout.measureAxis.minMax == 'minMax') ? layout.measureAxis.min : 0,
+        max: !layout.measureAxis.autoMinMax && (layout.measureAxis.minMax == 'max' || layout.measureAxis.minMax == 'minMax') ? layout.measureAxis.max : NaN,
         spacing: 0.5,
         ticks: {
-          /*count:10*/
           distance: layout.measureAxis.spacing * 150
         },
         minorTicks: {
@@ -82,7 +80,7 @@ export default function(layout) {
       {
         type: 'axis',
         dock: layout.dimensionAxis.dock === 'near' ? 'bottom' : 'top',
-        key:'xaxis',
+        key: 'xaxis',
         scale: 't',
         displayOrder: 0,
         settings: {
@@ -171,9 +169,9 @@ export default function(layout) {
             minHeightPx: 2,
             fill: function(d) {
               console.log(d);
-              if (d.datum.value === -4){
+              if (d.datum.value === -4) {
                 return colors.startvalue;
-              }else if(d.datum.value === -5) {
+              } else if (d.datum.value === -5) {
                 return colors.endvalue;
               } else {
                 if (d.datum.var.value < 0) {
@@ -355,17 +353,17 @@ export default function(layout) {
       },
       {
         key: 'rangex',
-        displayOrder:5,
+        displayOrder: 5,
         type: 'brush-range',
         settings: {
           brush: 'highlight',
-          direction:'horizontal',
+          direction: 'horizontal',
           scale: 't',
           target: {
             component: 'xaxis'
           },
           bubbles: {
-            align:'start'
+            align: 'start'
           },
 
         }
