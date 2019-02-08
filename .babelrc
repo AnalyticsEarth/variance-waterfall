@@ -14,7 +14,7 @@
       "builtIns":false,
       "evaluate": false,
 		"removeConsole":{
-        "exclude": ["log","error", "warn", "info" ]
+        "exclude": ["error", "warn", "info" ]
       },
       "removeDebugger":true
       }]
