@@ -287,7 +287,7 @@ let about = {
     about1a: {
       type: "string",
       component: "text",
-      label: "v1.0.0"
+      label: "v1.0.1"
     },
     about2: {
       type: "string",

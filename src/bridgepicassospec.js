@@ -13,6 +13,7 @@ export default function(layout) {
     negative: layout.labelsshow ? "Negative Variance" : layout.negName,
     positive: layout.labelsshow ? "Positive Variance" : layout.posName
   };
+  
 
   let colors = {
     startvalue: layout.color.auto ? ThemeManager.colorOther(2) : ThemeManager.colorFromPicker(layout.color.subtotal.paletteColor),
@@ -31,8 +32,9 @@ export default function(layout) {
         type: 'linear',
         invert: true,
         expand: 0.01,
-        min: !layout.measureAxis.autoMinMax && (layout.measureAxis.minMax == 'min' || layout.measureAxis.minMax == 'minMax') ? layout.measureAxis.min : 0,
+        min: !layout.measureAxis.autoMinMax && (layout.measureAxis.minMax == 'min' || layout.measureAxis.minMax == 'minMax') ? layout.measureAxis.min : NaN,
         max: !layout.measureAxis.autoMinMax && (layout.measureAxis.minMax == 'max' || layout.measureAxis.minMax == 'minMax') ? layout.measureAxis.max : NaN,
+        include:[0],
         spacing: 0.5,
         ticks: {
           distance: layout.measureAxis.spacing * 150
