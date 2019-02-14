@@ -19,6 +19,6 @@ export default window.define([], function() {
     definition: definition,
     controller: controller,
     paint: paint,
-    resize: resize
+    resize: resize 
   };
 });
