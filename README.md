@@ -4,7 +4,7 @@ The Variance Waterfall chart is a Qlik Sense extension to provide variance analy
 
 ## Download
 
-[**Download Here**](https://github.com/AnalyticsEarth/variance-waterfall/releases/download/v1.0.1/variance-waterfall.zip)
+[**Download Here**](https://github.com/AnalyticsEarth/variance-waterfall/releases/download/v1.1.0/variance-waterfall.zip)
 
 Download the extension from the Releases page of github, you cannot install the contents of this GitHub repository.
 
@@ -24,5 +24,6 @@ The extension supports the following Qlik Sense functionality:
 - Export
 - Snapshots
 - Dimension Selection
+- Right-to-Left and Left-to-Right
 
 The extension is rendered using the Picasso.js chart framework, for more information visit [Picasso.js](https://picassojs.com/)

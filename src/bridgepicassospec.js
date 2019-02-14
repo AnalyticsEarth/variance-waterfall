@@ -5,7 +5,7 @@ import {
   enableSelectionOnFirstDimension
 } from './interactions.js'
 
-export default function(layout) {
+export default function(layout, direction) {
 
   let labels = {
     startvalue: layout.labelsshow ? "Start Value" : layout.startName,
@@ -13,7 +13,7 @@ export default function(layout) {
     negative: layout.labelsshow ? "Negative Variance" : layout.negName,
     positive: layout.labelsshow ? "Positive Variance" : layout.posName
   };
-  
+
 
   let colors = {
     startvalue: layout.color.auto ? ThemeManager.colorOther(2) : ThemeManager.colorFromPicker(layout.color.subtotal.paletteColor),
@@ -21,6 +21,15 @@ export default function(layout) {
     negative: layout.color.auto ? ThemeManager.colorFromSeq(1) : ThemeManager.colorFromPicker(layout.color.negativeValue.paletteColor),
     positive: layout.color.auto ? ThemeManager.colorFromSeq(0) : ThemeManager.colorFromPicker(layout.color.positiveValue.paletteColor)
   };
+
+  let ltr = true;
+  let dockLeft = 'left';
+  let dockRight = 'right';
+  if(direction === 'rtl'){
+    ltr = false;
+    dockLeft = 'right';
+    dockRight = 'left';
+  }
 
   return {
     interactions: interactionsSetup(),
@@ -50,14 +59,15 @@ export default function(layout) {
           }
         },
         type: 'band',
-        padding: 0
+        invert: !ltr,
+        padding: 0.2
       }
     },
     components: [{
         type: 'text',
         show: (layout.measureAxis.show != 'none' && layout.measureAxis.show != 'labels' && layout.measureAxis.title != ""),
         text: layout.measureAxis.title,
-        dock: layout.measureAxis.dock === 'near' ? 'left' : 'right',
+        dock: layout.measureAxis.dock === 'near' ? dockLeft : dockRight,
         displayOrder: 1,
         style: {
           text: {
@@ -89,6 +99,7 @@ export default function(layout) {
           labels: {
             show: (layout.dimensionAxis.show != 'none' && layout.dimensionAxis.show != 'title'),
             mode: layout.dimensionAxis.label,
+            tiltAngle:ltr? 40 : -40
           },
           ticks: {
             show: true,
@@ -99,7 +110,7 @@ export default function(layout) {
         }
       }, {
         type: 'axis',
-        dock: layout.measureAxis.dock === 'near' ? 'left' : 'right',
+        dock: layout.measureAxis.dock === 'near' ? dockLeft : dockRight,
         scale: 'v',
         displayOrder: 0,
         settings: {
@@ -167,10 +178,10 @@ export default function(layout) {
           },
           orientation: 'vertical',
           box: {
-            width: 0.75,
+            width: 1,
             minHeightPx: 2,
             fill: function(d) {
-              console.log(d);
+              //console.log(d);
               if (d.datum.value === -4) {
                 return colors.startvalue;
               } else if (d.datum.value === -5) {
@@ -203,27 +214,35 @@ export default function(layout) {
           x: {
             scale: 't',
             fn: function(d) {
-              return d.scale(d.datum.value) + d.scale.bandwidth();
+              if(ltr){
+                return d.scale(d.datum.value) + (d.scale.bandwidth()) + ((d.scale.step() - d.scale.bandwidth())/2); // + d.scale.bandwidth() - (d.scale.step() - d.scale.bandwidth());
+              }else{
+                return d.scale(d.datum.value)  - ((d.scale.step() - d.scale.bandwidth())/2);
+              }
+
             }
           },
           y: {
             scale: 'v',
             ref: 'mm'
           },
-          show: function(d) {
-            //console.log(d);
-            if (d.datum.value === d.data.items[d.data.items.length - 1].value) {
-              return false;
-            } else {
-              return true;
-            }
-          },
-          size: function(d) {
+          opacity: function(d) {
             //console.log(d);
             if (d.datum.value === d.data.items[d.data.items.length - 1].value) {
               return 0;
             } else {
-              return 0.4;
+              return 1;
+            }
+          },
+          size: function(d) {
+            console.log(d);
+            console.log(d.scale(d.datum.value));
+            console.log(d.scale.bandwidth());
+            console.log(d.scale.step());
+            if (d.datum.value === d.data.items[d.data.items.length - 1].value) {
+              return 0;
+            } else {
+              return d.scale.step();
             }
           },
           fill: "none",
@@ -232,7 +251,10 @@ export default function(layout) {
             return ThemeManager.colorFromTheme(14);
           },
           strokeDasharray: "4 4",
-          strokeWidth: 1
+          strokeWidth: 1,
+          sizeLimits: {
+            maxRelExtent: 1,
+          }
         }
       },
       {
@@ -316,7 +338,7 @@ export default function(layout) {
             /* Maximum number of columns (vertical) or rows (horizontal) */
             size: 1, // Optional
             /* Layout direction. Either `'ltr'` or `'rtl'` */
-            direction: 'ltr', // Optional
+            direction: direction, // Optional
             /* Initial scroll offset */
             scrollOffset: 0, // Optional
           },

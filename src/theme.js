@@ -48,8 +48,8 @@ class ThemeManager {
   }
 
   static colorFromTheme(index) {
-    console.log("Return Color For Index:" + index);
-    console.log(ThemeManager.qlikTheme);
+    //console.log("Return Color For Index:" + index);
+    //console.log(ThemeManager.qlikTheme);
     if (typeof ThemeManager.qlikTheme != 'undefined') {
       return ThemeManager.qlikTheme.properties.palettes.ui[0].colors[index - 1];
     } else {
