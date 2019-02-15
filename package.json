@@ -1,6 +1,6 @@
 {
   "name": "variance-waterfall",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "scripts": {
     "build-webpack": "qext-scripts -b",
     "watch-webpack": "qext-scripts -w",
@@ -19,12 +19,12 @@
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
-    "@babel/preset-env": "^7.2.3",
+    "@babel/preset-env": "^7.3.1",
     "babel-preset-minify": "^0.5.0",
     "qext-scripts": "^0.6.0"
   },
   "dependencies": {
-    "picasso-plugin-q": "^0.18.2",
-    "picasso.js": "^0.18.2"
+    "picasso-plugin-q": "^0.20.0",
+    "picasso.js": "^0.20.0"
   }
 }

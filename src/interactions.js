@@ -55,10 +55,12 @@ var enableSelectionOnFirstDimension = function(that, chart, brush, layout) {
       that.backendApi.clearSelections();
     } else
     if (selection.method === 'selectHyperCubeValues') {
-      if (added[0].values.filter(i => i > -2).length > 0) {
-        let val = selection.params[2].filter(i => i > -2);
-        that.selectValues(selection.params[1], val, false);
-      }
+      let addedvals = [];
+      let removedvals = [];
+      if(added.length > 0) addedvals = added[0].values.filter(i => i > -2);
+      if(removed.length > 0) removedvals = removed[0].values.filter(i => i > -2);
+      let list = addedvals.concat(removedvals);
+      that.selectValues(selection.params[1], list, true);
     } else
     if (selection.method === 'rangeSelectHyperCubeValues') {
       if (chartBrush.isActive) {

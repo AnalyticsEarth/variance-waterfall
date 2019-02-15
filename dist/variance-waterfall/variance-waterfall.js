@@ -70,8 +70,8 @@
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* WEBPACK VAR INJECTION */(function(global) {/*
-* picasso-plugin-q v0.18.2
-* Copyright (c) 2018 QlikTech International AB
+* picasso-plugin-q v0.20.0
+* Copyright (c) 2019 QlikTech International AB
 * Released under the MIT license.
 */
 
@@ -125,6 +125,25 @@ function _defineProperty(obj, key, value) {
   }
 
   return obj;
+}
+
+function _objectSpread(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i] != null ? arguments[i] : {};
+    var ownKeys = Object.keys(source);
+
+    if (typeof Object.getOwnPropertySymbols === 'function') {
+      ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(source, sym).enumerable;
+      }));
+    }
+
+    ownKeys.forEach(function (key) {
+      _defineProperty(target, key, source[key]);
+    });
+  }
+
+  return target;
 }
 
 function _setPrototypeOf(o, p) {
@@ -346,6 +365,12 @@ function getFieldAccessor(field, page, deps) {
   }
 
   var cache = deps.cache;
+  var origin = field.origin ? field.origin() : null;
+
+  if (origin) {
+    field = origin;
+  }
+
   var fieldIdx = cache.fields.indexOf(field);
   var attrIdx = -1;
   var attrDimIdx = -1;
@@ -1019,7 +1044,7 @@ function getFieldDepth(field, _ref) {
     return -1;
   }
 
-  var key = field.key();
+  var key = field.origin && field.origin() ? field.origin().key() : field.key();
   var isFieldDimension = false;
   var fieldIdx = -1; // cache.fields.indexOf(field);
 
@@ -1255,7 +1280,7 @@ var getHierarchy = function getHierarchy(cube, cache, config) {
 };
 
 function getHierarchyForSMode(dataset) {
-  var matrix = dataset.raw().qDataPages[0].qMatrix;
+  var matrix = dataset.raw().qDataPages.length ? dataset.raw().qDataPages[0].qMatrix : [];
   var order = getColumnOrder(dataset);
   var fields = dataset.fields();
   var dimensions = dataset.fields().filter(function (f) {
@@ -2130,8 +2155,91 @@ function numberFormatFactory() {
   return _construct(NumberFormatter, args);
 }
 
+function memoize(func) {
+  var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  var _opts$size = opts.size,
+      size = _opts$size === void 0 ? 5000 : _opts$size,
+      _opts$multipleArgumen = opts.multipleArguments,
+      multipleArguments = _opts$multipleArgumen === void 0 ? false : _opts$multipleArgumen,
+      _opts$toKey = opts.toKey,
+      toKey = _opts$toKey === void 0 ? function (arg) {
+    return arg;
+  } : _opts$toKey;
+  var cache = Object.create(null);
+  var index = Object.create(null);
+  var counter = 0;
+  var fifo = 0; // First-In-First-Out index
+
+  var _cacher2;
+
+  var k;
+
+  if (multipleArguments) {
+    _cacher2 = function cacher() {
+      k = toKey.apply(void 0, arguments);
+
+      if (_cacher2.has(k)) {
+        return _cacher2.get(k);
+      }
+
+      return _cacher2.set(k, func.apply(void 0, arguments));
+    };
+  } else {
+    _cacher2 = function _cacher(arg) {
+      k = toKey(arg);
+
+      if (_cacher2.has(k)) {
+        return _cacher2.get(k);
+      }
+
+      return _cacher2.set(k, func(arg));
+    };
+  }
+
+  _cacher2.set = function (key, val) {
+    if (counter >= size) {
+      delete cache[index[fifo]];
+      delete index[fifo];
+      counter--;
+      fifo++;
+    }
+
+    cache[key] = val;
+    index[counter] = key;
+    counter++;
+    return val;
+  };
+
+  _cacher2.get = function (key) {
+    return cache[key];
+  };
+
+  _cacher2.has = function (key) {
+    return key in cache;
+  };
+
+  _cacher2.clear = function () {
+    cache = Object.create(null);
+    index = Object.create(null);
+    counter = 0;
+    fifo = 0;
+  };
+
+  _cacher2.size = function () {
+    return counter;
+  };
+
+  return _cacher2;
+}
+
 function formatter(pattern, thousand, decimal, qType, localeInfo) {
   var qformat = numberFormatFactory(localeInfo, pattern, thousand, decimal, qType);
+  var memoized = memoize(qformat.formatValue.bind(qformat), {
+    // Handle NaN and cases where toString yields different result than +operator. Ex. a Date.
+    toKey: function toKey(value) {
+      return isNaN(value) ? value : +value;
+    }
+  });
   /**
    * Format a value according to the specified pattern created at construct
    *
@@ -2140,7 +2248,7 @@ function formatter(pattern, thousand, decimal, qType, localeInfo) {
    */
 
   function format(value) {
-    return qformat.formatValue(value);
+    return memoized(value);
   }
   /**
     * Format a value according to a specific pattern
@@ -2155,6 +2263,7 @@ function formatter(pattern, thousand, decimal, qType, localeInfo) {
 
 
   format.format = function formatFn(p, v, t, d) {
+    memoized.clear();
     return qformat.format(v, p, t, d);
   };
   /**
@@ -2167,6 +2276,7 @@ function formatter(pattern, thousand, decimal, qType, localeInfo) {
 
   format.pattern = function patternFn(p) {
     if (p) {
+      memoized.clear();
       qformat.pattern = p;
       qformat.prepare();
     }
@@ -2568,6 +2678,11 @@ function formatter$1(pattern) {
   var qtype = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'TS';
   var localeInfo = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
   var qformat = dateFormatFactory(localeInfo, pattern, qtype);
+  var memoized = memoize(qformat.format.bind(qformat), {
+    toKey: function toKey(date) {
+      return _typeof(date) === 'object' ? date.getTime() : date;
+    }
+  });
   /**
    * Prepare a value according to the specified qtype
    *
@@ -2592,7 +2707,7 @@ function formatter$1(pattern) {
 
   function format(value) {
     value = prepare(value);
-    return qformat.format(value);
+    return memoized(value);
   }
   /**
     * Format a value according to a specific pattern
@@ -2605,6 +2720,7 @@ function formatter$1(pattern) {
 
 
   format.format = function formatFn(p, v) {
+    memoized.clear();
     v = prepare(v);
     return qformat.format(v, p);
   };
@@ -2618,6 +2734,11 @@ function formatter$1(pattern) {
 
   format.locale = function locale(li) {
     qformat = dateFormatFactory(li, pattern, qtype);
+    memoized = memoize(qformat.format.bind(qformat), {
+      toKey: function toKey(date) {
+        return _typeof(date) === 'object' ? date.getTime() : date;
+      }
+    });
     return this;
   };
   /**
@@ -2631,6 +2752,7 @@ function formatter$1(pattern) {
   format.qtype = function qtypeFn(nqt) {
     if (nqt !== undefined) {
       qtype = nqt;
+      memoized.clear();
     }
 
     return qtype;
@@ -2676,7 +2798,8 @@ function qField() {
       localeInfo = _ref.localeInfo,
       fieldExtractor = _ref.fieldExtractor,
       value = _ref.value,
-      _type = _ref.type;
+      _type = _ref.type,
+      sourceField = _ref.sourceField;
 
   var values;
   var valueFn = value || (_type === 'dimension' ? function (d) {
@@ -2711,6 +2834,9 @@ function qField() {
     },
     type: function type() {
       return _type;
+    },
+    origin: function origin() {
+      return sourceField;
     },
     items: function items() {
       if (!values) {
@@ -2772,7 +2898,7 @@ function createFields(path, obj, prefix, parentKey, opts) {
 }
 
 function q() {
-  var _cache$wrappedFields, _cache$wrappedFields2;
+  var _cache$wrappedFields, _cache$wrappedFields2, _cache$allFields;
 
   var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
       _key = _ref.key,
@@ -2783,7 +2909,8 @@ function q() {
   var cache = {
     fields: [],
     wrappedFields: [],
-    allFields: []
+    allFields: [],
+    virtualFields: []
   };
   var cube = data;
 
@@ -2804,7 +2931,8 @@ function q() {
     pages: null,
     hierarchy: function hierarchy() {
       return null;
-    }
+    },
+    virtualFields: config.virtualFields
   };
   var dataset = {
     key: function key() {
@@ -2882,6 +3010,32 @@ function q() {
   };
 
   traverse(cache.wrappedFields);
+  (config.virtualFields || []).forEach(function (v) {
+    // key: 'temporal',
+    // from: 'qDimensionInfo/0',
+    // override: {
+    //   value: v => v.qNum,
+    // },
+    var sourceField = dataset.field(v.from);
+    var f = qField(_objectSpread({
+      meta: sourceField.raw(),
+      id: "".concat(_key, "/").concat(v.key),
+      sourceField: sourceField,
+      fieldExtractor: function fieldExtractor(ff) {
+        return opts.extractor({
+          field: ff
+        }, dataset, cache, deps);
+      },
+      key: v.key,
+      type: sourceField.type(),
+      localeInfo: opts.localeInfo,
+      value: sourceField.value
+    }, v.override || {}));
+    cache.virtualFields.push(f);
+  });
+
+  (_cache$allFields = cache.allFields).push.apply(_cache$allFields, _toConsumableArray(cache.virtualFields));
+
   return dataset;
 }
 
@@ -3262,8 +3416,8 @@ if("undefined"!=typeof a.qlikTheme){return a.qlikTheme.properties.palettes.ui[0]
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /*
-* picasso.js v0.18.2
-* Copyright (c) 2018 QlikTech International AB
+* picasso.js v0.20.0
+* Copyright (c) 2019 QlikTech International AB
 * Released under the MIT license.
 */
 
@@ -3930,7 +4084,7 @@ var extend = function extend() {
 };
 
 var about = {
-  version: '0.18.2'
+  version: '0.20.0'
 };
 
 function _typeof(obj) {
@@ -3982,6 +4136,25 @@ function _defineProperty(obj, key, value) {
   }
 
   return obj;
+}
+
+function _objectSpread(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i] != null ? arguments[i] : {};
+    var ownKeys = Object.keys(source);
+
+    if (typeof Object.getOwnPropertySymbols === 'function') {
+      ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(source, sym).enumerable;
+      }));
+    }
+
+    ownKeys.forEach(function (key) {
+      _defineProperty(target, key, source[key]);
+    });
+  }
+
+  return target;
 }
 
 function _inherits(subClass, superClass) {
@@ -4473,6 +4646,60 @@ function reduceSingleLayoutRect(logicalContainerRect, reducedRect, edgeBleed, c,
   addEdgeBleed(edgeBleed, c);
   return true;
 }
+/**
+ * Updates the visible and hidden components based on components that are docked to other components.
+ * For example, assume a component called myRect:
+ * {
+ *  key: 'myRect',
+ *  type: 'rect',
+ *  dock: 'bottom'
+ * }
+ * and a component called myLine:
+ * {
+ *  key: 'myLine',
+ *  type: 'line',
+ *  dock: '@myRect'
+ * }
+ * if the layout engine decides to hide myRect, then myLine should be hidden as well.
+ * @param {Array} components - Components to be decided if they should be hidden or not.
+ * @param {Array} hiddenComponents - Components that are already hidden.
+ * @returns {Object} containing the new visible components and additional components to be hidden.
+ * @ignore
+ */
+
+
+function updateForComponentsDockedAtRemovedComponents(components, hiddenComponents) {
+  if (hiddenComponents.length === 0) {
+    return {
+      visibleComponents: components,
+      dockedAtRemovedComponents: []
+    };
+  }
+
+  var dockedAtRemovedComponents = [];
+  var visibleComponents = components.filter(function (comp) {
+    if (comp.referencedDocks.length === 0) {
+      return true;
+    }
+
+    var isAllHidden = comp.referencedDocks.every(function (refDock) {
+      return hiddenComponents.some(function (hiddenComp) {
+        var key = hiddenComp.ctx && hiddenComp.ctx.key;
+        return refDock === key;
+      });
+    });
+
+    if (isAllHidden) {
+      dockedAtRemovedComponents.push(comp.instance);
+    }
+
+    return !isAllHidden;
+  });
+  return {
+    visibleComponents: visibleComponents,
+    dockedAtRemovedComponents: dockedAtRemovedComponents
+  };
+}
 
 function reduceLayoutRect(logicalContainerRect, components, hiddenComponents, settings) {
   var reducedRect = {
@@ -4503,13 +4730,27 @@ function reduceLayoutRect(logicalContainerRect, components, hiddenComponents, se
     }
   }
 
+  var _updateForComponentsD = updateForComponentsDockedAtRemovedComponents(sortedComponents, hiddenComponents),
+      visibleComponents = _updateForComponentsD.visibleComponents,
+      dockedAtRemovedComponents = _updateForComponentsD.dockedAtRemovedComponents;
+
+  hiddenComponents.push.apply(hiddenComponents, _toConsumableArray$1(dockedAtRemovedComponents));
   var filteredUnsortedComps = components.filter(function (c) {
-    return sortedComponents.indexOf(c) !== -1;
+    return visibleComponents.indexOf(c) !== -1;
   });
   components.length = 0;
   components.push.apply(components, _toConsumableArray$1(filteredUnsortedComps));
   reduceEdgeBleed(logicalContainerRect, reducedRect, edgeBleed);
   return reducedRect;
+}
+
+function computeRect(rect) {
+  return {
+    x: rect.margin.left + rect.x * rect.scaleRatio.x,
+    y: rect.margin.top + rect.y * rect.scaleRatio.y,
+    width: rect.width * rect.scaleRatio.x,
+    height: rect.height * rect.scaleRatio.y
+  };
 }
 
 function appendScaleRatio(rect, outerRect, logicalContainerRect, containerRect) {
@@ -4566,11 +4807,11 @@ function positionComponents(components, logicalContainerRect, reducedRect, conta
   var referencedComponents = {};
   var referenceArray = components.slice();
   components.sort(function (a, b) {
-    if (/^@/.test(b.config.dock())) {
+    if (b.referencedDocks.length > 0) {
       return -1;
     }
 
-    if (/^@/.test(a.config.dock())) {
+    if (a.referencedDocks.length > 0) {
       return 1;
     }
 
@@ -4636,9 +4877,9 @@ function positionComponents(components, logicalContainerRect, reducedRect, conta
         outerRect.height = rect.height = reducedRect.height;
     }
 
-    if (/^@/.test(d)) {
-      var refs = d.split(',').map(function (r) {
-        return referencedComponents[r.replace('@', '')];
+    if (c.referencedDocks.length > 0) {
+      var refs = c.referencedDocks.map(function (r) {
+        return referencedComponents[r];
       }).filter(function (r) {
         return !!r;
       });
@@ -4660,6 +4901,10 @@ function positionComponents(components, logicalContainerRect, reducedRect, conta
     }
 
     appendScaleRatio(rect, outerRect, logicalContainerRect, containerRect);
+    rect.edgeBleed = c.edgeBleed;
+    rect.computed = computeRect(rect);
+    outerRect.edgeBleed = c.edgeBleed;
+    outerRect.computed = computeRect(outerRect);
     c.instance.resize(rect, outerRect, logicalContainerRect);
     c.cachedSize = undefined;
   });
@@ -4715,10 +4960,14 @@ function dockLayout(initialSettings) {
   docker.addComponent = function addComponent(component, key) {
     validateComponent(component);
     docker.removeComponent(component);
+    var dock = component.dockConfig().dock();
     components.push({
       instance: component,
       key: key,
-      config: component.dockConfig()
+      config: component.dockConfig(),
+      referencedDocks: /@/.test(dock) ? dock.split(',').map(function (s) {
+        return s.replace(/^\s*@/, '');
+      }) : []
     });
   };
 
@@ -5019,7 +5268,9 @@ function arcPadAngle(d) {
 function intersect(x0, y0, x1, y1, x2, y2, x3, y3) {
   var x10 = x1 - x0, y10 = y1 - y0,
       x32 = x3 - x2, y32 = y3 - y2,
-      t = (x32 * (y0 - y2) - y32 * (x0 - x2)) / (y32 * x10 - x32 * y10);
+      t = y32 * x10 - x32 * y10;
+  if (t * t < epsilon$1) return;
+  t = (x32 * (y0 - y2) - y32 * (x0 - x2)) / t;
   return [x0 + t * x10, y0 + t * y10];
 }
 
@@ -5140,12 +5391,12 @@ function arc() {
         var x11 = r1 * cos(a11),
             y11 = r1 * sin(a11),
             x00 = r0 * cos(a00),
-            y00 = r0 * sin(a00);
+            y00 = r0 * sin(a00),
+            oc;
 
         // Restrict the corner radius according to the sector angle.
-        if (da < pi$1) {
-          var oc = da0 > epsilon$1 ? intersect(x01, y01, x00, y00, x11, y11, x10, y10) : [x10, y10],
-              ax = x01 - oc[0],
+        if (da < pi$1 && (oc = intersect(x01, y01, x00, y00, x11, y11, x10, y10))) {
+          var ax = x01 - oc[0],
               ay = y01 - oc[1],
               bx = x11 - oc[0],
               by = y11 - oc[1],
@@ -6082,6 +6333,17 @@ function stackOffsetWiggle(series, order) {
   none(series, order);
 }
 
+function appearance(series) {
+  var peaks = series.map(peak);
+  return none$1(series).sort(function(a, b) { return peaks[a] - peaks[b]; });
+}
+
+function peak(series) {
+  var i = -1, j = 0, n = series.length, vi, vj = -Infinity;
+  while (++i < n) if ((vi = +series[i][1]) > vj) vj = vi, j = i;
+  return j;
+}
+
 function ascending(series) {
   var sums = series.map(sum);
   return none$1(series).sort(function(a, b) { return sums[a] - sums[b]; });
@@ -6098,7 +6360,7 @@ function stackOrderInsideOut(series) {
       i,
       j,
       sums = series.map(sum),
-      order = none$1(series).sort(function(a, b) { return sums[b] - sums[a]; }),
+      order = appearance(series),
       top = 0,
       bottom = 0,
       tops = [],
@@ -8157,32 +8419,33 @@ function create$1(options, data, deps) {
 
   throw new Error("Formatter of type '".concat(formatterType, "' was not found"));
 }
-function builder(obj, data, deps) {
+function collection(formattersConfig, data, deps) {
+  var fn = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : create$1;
   var formatters = {};
+  return {
+    get: function get(def) {
+      var key;
 
-  for (var f in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, f)) {
-      formatters[f] = create$1(obj[f], data, deps);
+      if (typeof def === 'string' && formattersConfig[def]) {
+        key = def;
+      } else if (_typeof(def) === 'object' && 'formatter' in def && formattersConfig[def.formatter]) {
+        key = def.formatter;
+      } else if (_typeof(def) === 'object' && 'type' in def && formattersConfig[def.type]) {
+        key = def.type;
+      }
+
+      if (key) {
+        formatters[key] = formatters[key] || fn(formattersConfig[key], data, deps);
+        return formatters[key];
+      }
+
+      return fn(def || {}, data, deps);
+    },
+    all: function all() {
+      Object.keys(formattersConfig).forEach(this.get);
+      return formatters;
     }
-  }
-
-  return formatters;
-}
-function getOrCreateFormatter(v, formatters, data, deps) {
-  var f;
-
-  if (typeof v === 'string' && formatters[v]) {
-    // return by name
-    f = formatters[v];
-  } else if (_typeof(v) === 'object' && 'formatter' in v && formatters[v.formatter]) {
-    // return by { formatter: "name" }
-    f = formatters[v.formatter];
-  } else if (_typeof(v) === 'object' && 'type' in v && formatters[v.type]) {
-    // return by { formatter: "name" }
-    f = formatters[v.type];
-  }
-
-  return f || create$1(v, data, deps);
+  };
 }
 
 function ascending$1(a, b) {
@@ -8288,6 +8551,15 @@ function tickStep(start, stop, count) {
   else if (error >= e5) step1 *= 5;
   else if (error >= e2) step1 *= 2;
   return stop < start ? -step1 : step1;
+}
+
+function initRange(domain, range) {
+  switch (arguments.length) {
+    case 0: break;
+    case 1: this.range(domain); break;
+    default: this.range(range).domain(domain); break;
+  }
+  return this;
 }
 
 var prefix = "$";
@@ -8407,12 +8679,11 @@ var slice$2 = array$1.slice;
 
 var implicit = {name: "implicit"};
 
-function ordinal(range) {
+function ordinal() {
   var index = map$1(),
       domain = [],
+      range = [],
       unknown = implicit;
-
-  range = range == null ? [] : slice$2.call(range);
 
   function scale(d) {
     var key = d + "", i = index.get(key);
@@ -8440,11 +8711,10 @@ function ordinal(range) {
   };
 
   scale.copy = function() {
-    return ordinal()
-        .domain(domain)
-        .range(range)
-        .unknown(unknown);
+    return ordinal(domain, range).unknown(unknown);
   };
+
+  initRange.apply(scale, arguments);
 
   return scale;
 }
@@ -8502,15 +8772,15 @@ function band() {
   };
 
   scale.padding = function(_) {
-    return arguments.length ? (paddingInner = paddingOuter = Math.max(0, Math.min(1, _)), rescale()) : paddingInner;
+    return arguments.length ? (paddingInner = Math.min(1, paddingOuter = +_), rescale()) : paddingInner;
   };
 
   scale.paddingInner = function(_) {
-    return arguments.length ? (paddingInner = Math.max(0, Math.min(1, _)), rescale()) : paddingInner;
+    return arguments.length ? (paddingInner = Math.min(1, _), rescale()) : paddingInner;
   };
 
   scale.paddingOuter = function(_) {
-    return arguments.length ? (paddingOuter = Math.max(0, Math.min(1, _)), rescale()) : paddingOuter;
+    return arguments.length ? (paddingOuter = +_, rescale()) : paddingOuter;
   };
 
   scale.align = function(_) {
@@ -8518,16 +8788,14 @@ function band() {
   };
 
   scale.copy = function() {
-    return band()
-        .domain(domain())
-        .range(range$$1)
+    return band(domain(), range$$1)
         .round(round)
         .paddingInner(paddingInner)
         .paddingOuter(paddingOuter)
         .align(align);
   };
 
-  return rescale();
+  return initRange.apply(rescale(), arguments);
 }
 
 function define(constructor, factory, prototype) {
@@ -9251,34 +9519,32 @@ function number$2(x) {
 
 var unit = [0, 1];
 
-function deinterpolateLinear(a, b) {
+function identity$4(x) {
+  return x;
+}
+
+function normalize(a, b) {
   return (b -= (a = +a))
       ? function(x) { return (x - a) / b; }
-      : constant$3(b);
+      : constant$3(isNaN(b) ? NaN : 0.5);
 }
 
-function deinterpolateClamp(deinterpolate) {
-  return function(a, b) {
-    var d = deinterpolate(a = +a, b = +b);
-    return function(x) { return x <= a ? 0 : x >= b ? 1 : d(x); };
-  };
+function clamper(domain) {
+  var a = domain[0], b = domain[domain.length - 1], t;
+  if (a > b) t = a, a = b, b = t;
+  return function(x) { return Math.max(a, Math.min(b, x)); };
 }
 
-function reinterpolateClamp(reinterpolate) {
-  return function(a, b) {
-    var r = reinterpolate(a = +a, b = +b);
-    return function(t) { return t <= 0 ? a : t >= 1 ? b : r(t); };
-  };
-}
-
-function bimap(domain, range$$1, deinterpolate, reinterpolate) {
+// normalize(a, b)(x) takes a domain value x in [a,b] and returns the corresponding parameter t in [0,1].
+// interpolate(a, b)(t) takes a parameter t in [0,1] and returns the corresponding range value x in [a,b].
+function bimap(domain, range$$1, interpolate$$1) {
   var d0 = domain[0], d1 = domain[1], r0 = range$$1[0], r1 = range$$1[1];
-  if (d1 < d0) d0 = deinterpolate(d1, d0), r0 = reinterpolate(r1, r0);
-  else d0 = deinterpolate(d0, d1), r0 = reinterpolate(r0, r1);
+  if (d1 < d0) d0 = normalize(d1, d0), r0 = interpolate$$1(r1, r0);
+  else d0 = normalize(d0, d1), r0 = interpolate$$1(r0, r1);
   return function(x) { return r0(d0(x)); };
 }
 
-function polymap(domain, range$$1, deinterpolate, reinterpolate) {
+function polymap(domain, range$$1, interpolate$$1) {
   var j = Math.min(domain.length, range$$1.length) - 1,
       d = new Array(j),
       r = new Array(j),
@@ -9291,8 +9557,8 @@ function polymap(domain, range$$1, deinterpolate, reinterpolate) {
   }
 
   while (++i < j) {
-    d[i] = deinterpolate(domain[i], domain[i + 1]);
-    r[i] = reinterpolate(range$$1[i], range$$1[i + 1]);
+    d[i] = normalize(domain[i], domain[i + 1]);
+    r[i] = interpolate$$1(range$$1[i], range$$1[i + 1]);
   }
 
   return function(x) {
@@ -9306,16 +9572,18 @@ function copy(source, target) {
       .domain(source.domain())
       .range(source.range())
       .interpolate(source.interpolate())
-      .clamp(source.clamp());
+      .clamp(source.clamp())
+      .unknown(source.unknown());
 }
 
-// deinterpolate(a, b)(x) takes a domain value x in [a,b] and returns the corresponding parameter t in [0,1].
-// reinterpolate(a, b)(t) takes a parameter t in [0,1] and returns the corresponding domain value x in [a,b].
-function continuous(deinterpolate, reinterpolate) {
+function transformer() {
   var domain = unit,
       range$$1 = unit,
       interpolate$$1 = value,
-      clamp = false,
+      transform,
+      untransform,
+      unknown,
+      clamp = identity$4,
       piecewise$$1,
       output,
       input;
@@ -9327,15 +9595,15 @@ function continuous(deinterpolate, reinterpolate) {
   }
 
   function scale(x) {
-    return (output || (output = piecewise$$1(domain, range$$1, clamp ? deinterpolateClamp(deinterpolate) : deinterpolate, interpolate$$1)))(+x);
+    return isNaN(x = +x) ? unknown : (output || (output = piecewise$$1(domain.map(transform), range$$1, interpolate$$1)))(transform(clamp(x)));
   }
 
   scale.invert = function(y) {
-    return (input || (input = piecewise$$1(range$$1, domain, deinterpolateLinear, clamp ? reinterpolateClamp(reinterpolate) : reinterpolate)))(+y);
+    return clamp(untransform((input || (input = piecewise$$1(range$$1, domain.map(transform), number$1)))(y)));
   };
 
   scale.domain = function(_) {
-    return arguments.length ? (domain = map$2.call(_, number$2), rescale()) : domain.slice();
+    return arguments.length ? (domain = map$2.call(_, number$2), clamp === identity$4 || (clamp = clamper(domain)), rescale()) : domain.slice();
   };
 
   scale.range = function(_) {
@@ -9347,20 +9615,29 @@ function continuous(deinterpolate, reinterpolate) {
   };
 
   scale.clamp = function(_) {
-    return arguments.length ? (clamp = !!_, rescale()) : clamp;
+    return arguments.length ? (clamp = _ ? clamper(domain) : identity$4, scale) : clamp !== identity$4;
   };
 
   scale.interpolate = function(_) {
     return arguments.length ? (interpolate$$1 = _, rescale()) : interpolate$$1;
   };
 
-  return rescale();
+  scale.unknown = function(_) {
+    return arguments.length ? (unknown = _, scale) : unknown;
+  };
+
+  return function(t, u) {
+    transform = t, untransform = u;
+    return rescale();
+  };
 }
 
-function tickFormat(domain, count, specifier) {
-  var start = domain[0],
-      stop = domain[domain.length - 1],
-      step = tickStep(start, stop, count == null ? 10 : count),
+function continuous(transform, untransform) {
+  return transformer()(transform, untransform);
+}
+
+function tickFormat(start, stop, count, specifier) {
+  var step = tickStep(start, stop, count),
       precision;
   specifier = formatSpecifier(specifier == null ? ",f" : specifier);
   switch (specifier.type) {
@@ -9395,7 +9672,8 @@ function linearish(scale) {
   };
 
   scale.tickFormat = function(count, specifier) {
-    return tickFormat(domain(), count, specifier);
+    var d = domain();
+    return tickFormat(d[0], d[d.length - 1], count == null ? 10 : count, specifier);
   };
 
   scale.nice = function(count) {
@@ -9442,11 +9720,13 @@ function linearish(scale) {
 }
 
 function linear$1() {
-  var scale = continuous(deinterpolateLinear, number$1);
+  var scale = continuous(identity$4, identity$4);
 
   scale.copy = function() {
     return copy(scale, linear$1());
   };
+
+  initRange.apply(scale, arguments);
 
   return linearish(scale);
 }
@@ -9454,10 +9734,11 @@ function linear$1() {
 function threshold() {
   var domain = [0.5],
       range$$1 = [0, 1],
+      unknown,
       n = 1;
 
   function scale(x) {
-    if (x <= x) return range$$1[bisectRight(domain, x, 0, n)];
+    return x <= x ? range$$1[bisectRight(domain, x, 0, n)] : unknown;
   }
 
   scale.domain = function(_) {
@@ -9473,13 +9754,18 @@ function threshold() {
     return [domain[i - 1], domain[i]];
   };
 
+  scale.unknown = function(_) {
+    return arguments.length ? (unknown = _, scale) : unknown;
+  };
+
   scale.copy = function() {
     return threshold()
         .domain(domain)
-        .range(range$$1);
+        .range(range$$1)
+        .unknown(unknown);
   };
 
-  return scale;
+  return initRange.apply(scale, arguments);
 }
 
 function applyFormat(formatter) {
@@ -9716,7 +10002,10 @@ function generateContinuousTicks(_ref5) {
   var settings = _ref5.settings,
       scale = _ref5.scale,
       distance = _ref5.distance,
-      formatter = _ref5.formatter;
+      _ref5$formatter = _ref5.formatter,
+      formatter = _ref5$formatter === void 0 ? function (val) {
+    return val;
+  } : _ref5$formatter;
   var ticks;
   var minorCount = settings.minorTicks && !notNumber(settings.minorTicks.count) ? Math.min(100, settings.minorTicks.count) : 0;
 
@@ -10016,7 +10305,7 @@ function scaleLinear$$1() {
   }; // TODO Support this?
 
 
-  fn.tickFormat = function tickFormat(count, format) {
+  fn.tickFormat = function tickFormat$$1(count, format) {
     return d3Scale.tickFormat(count, format);
   }; // TODO Support this?
 
@@ -11158,29 +11447,31 @@ function create$2(options, d, deps) {
 
   return s;
 }
-function getOrCreateScale(v, scales, d, deps) {
-  var s;
-
-  if (typeof v === 'string' && scales[v]) {
-    // return by name
-    s = scales[v];
-  } else if (_typeof(v) === 'object' && 'scale' in v && scales[v.scale]) {
-    // return by { scale: "name" }
-    s = scales[v.scale];
-  }
-
-  return s || create$2(v, d, deps);
-}
-function builder$1(obj, d, deps) {
+function collection$1(scalesConfig, data, deps) {
+  var fn = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : create$2;
   var scales = {};
+  return {
+    get: function get(def) {
+      var key;
 
-  for (var s in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, s)) {
-      scales[s] = create$2(obj[s], d, deps);
+      if (typeof def === 'string' && scalesConfig[def]) {
+        key = def;
+      } else if (_typeof(def) === 'object' && 'scale' in def && scalesConfig[def.scale]) {
+        key = def.scale;
+      }
+
+      if (key) {
+        scales[key] = scales[key] || fn(scalesConfig[key], data, deps);
+        return scales[key];
+      }
+
+      return fn(def, data, deps);
+    },
+    all: function all() {
+      Object.keys(scalesConfig).forEach(this.get);
+      return scales;
     }
-  }
-
-  return scales;
+  };
 }
 
 /**
@@ -11591,7 +11882,7 @@ function createOrUpdate(options, oldApi) {
   });
   return s;
 }
-function builder$2(obj, oldScrollApis) {
+function builder(obj, oldScrollApis) {
   var scrollApis = {};
 
   for (var n in obj) {
@@ -13295,14 +13586,12 @@ function normalizeSettings(settings, defaults, chart) {
   });
   return defs;
 }
-function resolveForItem(context, normalized) {
+function resolveForItem(context, normalized, idx) {
   var ret = {};
   var keys = Object.keys(normalized);
   var len = keys.length;
   var fallbackData = context.datum;
   var datum = context.datum;
-  var dataContext = context.data && context.data.items;
-  var idx = dataContext ? dataContext.indexOf(datum) : -1;
 
   for (var i = 0; i < len; i++) {
     var key = keys[i];
@@ -13384,13 +13673,15 @@ function settingsResolver (resources) {
     var resolved = [];
 
     if (data && Array.isArray(data.items)) {
+      var context;
+
       for (var i = 0, len = data.items.length; i < len; i++) {
-        var context = {
+        context = {
           datum: data.items[i],
           data: data,
           resources: res
         };
-        var obj = deps.resolveForItem(context, cache.norm);
+        var obj = deps.resolveForItem(context, cache.norm, i);
         obj.data = data.items[i];
         resolved.push(obj);
       }
@@ -13400,7 +13691,7 @@ function settingsResolver (resources) {
         resources: res
       };
 
-      var _obj = deps.resolveForItem(_context, cache.norm);
+      var _obj = deps.resolveForItem(_context, cache.norm, -1);
 
       return {
         settings: cache.norm,
@@ -13429,7 +13720,8 @@ function reduceToLeafNodes() {
   var nodes = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
   return nodes.reduce(function (ary, node) {
     if (Array.isArray(node.children)) {
-      return ary.concat(reduceToLeafNodes(node.children));
+      ary.push.apply(ary, _toConsumableArray$1(reduceToLeafNodes(node.children)));
+      return ary;
     }
 
     ary.push(node);
@@ -13440,7 +13732,8 @@ function styler(obj, _ref) {
   var context = _ref.context,
       data = _ref.data,
       style = _ref.style,
-      filter = _ref.filter;
+      filter = _ref.filter,
+      mode = _ref.mode;
   var brusher = obj.chart.brush(context);
   var dataProps = data;
   var active = style.active || {};
@@ -13489,7 +13782,7 @@ function styler(obj, _ref) {
         });
       }
 
-      var isActive = brusher.containsMappedData(nodeData, dataProps);
+      var isActive = brusher.containsMappedData(nodeData, dataProps, mode);
       var activeIdx = activeNodes.indexOf(nodes[i]);
       var changed = false;
 
@@ -14566,7 +14859,7 @@ function dockConfig() {
 }
 
 var isReservedProperty = function isReservedProperty(prop) {
-  return ['on', 'preferredSize', 'created', 'beforeMount', 'mounted', 'resize', 'beforeUpdate', 'updated', 'beforeRender', 'render', 'beforeUnmount', 'beforeDestroy', 'destroyed', 'defaultSettings', 'data', 'settings', 'formatter', 'scale', 'chart', 'dockConfig', 'mediator', 'style', 'resolver', 'registries', '_DO_NOT_USE_getInfo', 'symbol'].some(function (name) {
+  return ['on', 'preferredSize', 'created', 'beforeMount', 'mounted', 'resize', 'beforeUpdate', 'updated', 'beforeRender', 'render', 'beforeUnmount', 'beforeDestroy', 'destroyed', 'defaultSettings', 'data', 'settings', 'formatter', 'scale', 'chart', 'dockConfig', 'mediator', 'style', 'resolver', 'registries', '_DO_NOT_USE_getInfo', 'symbol', 'isVisible'].some(function (name) {
     return name === prop;
   });
 };
@@ -14590,7 +14883,15 @@ function prepareContext(ctx, definition, opts) {
       resolver = opts.resolver,
       update = opts.update,
       _DO_NOT_USE_getInfo = opts._DO_NOT_USE_getInfo,
-      symbol = opts.symbol; // TODO add setters and log warnings / errors to console
+      symbol = opts.symbol,
+      isVisible = opts.isVisible;
+
+  ctx.emit = function () {};
+
+  if (isVisible) {
+    ctx.isVisible = isVisible;
+  } // TODO add setters and log warnings / errors to console
+
 
   Object.defineProperty(ctx, 'settings', {
     get: settings
@@ -14698,6 +14999,16 @@ function setUpEmitter(ctx, emitter, settings) {
 
     return emitter.emit.apply(emitter, [name].concat(event));
   };
+}
+
+function tearDownEmitter(ctx, emitter) {
+  (ctx.eventListeners || []).forEach(function (_ref) {
+    var event = _ref.event,
+        listener = _ref.listener;
+    emitter.removeListener(event, listener);
+  });
+
+  ctx.emit = function () {};
 } // First render
 // preferredSize -> resize -> beforeRender -> render -> mounted
 // Normal update
@@ -14743,6 +15054,7 @@ function componentFactory(definition) {
     chart: _chart
   });
 
+  var _isVisible = false;
   var brushArgs = {
     nodes: [],
     chart: _chart,
@@ -14800,8 +15112,8 @@ function componentFactory(definition) {
   var preferredSize = createCallback('preferredSize', function () {
     return 0;
   }, true);
-  var resize = createCallback('resize', function (_ref) {
-    var inner = _ref.inner;
+  var resize = createCallback('resize', function (_ref2) {
+    var inner = _ref2.inner;
     return inner;
   });
   var created = createCallback('created');
@@ -14901,21 +15213,29 @@ function componentFactory(definition) {
     _style = theme.style(_settings.style || {});
   };
 
-  fn.resize = function (inner, outer) {
+  fn.resize = function () {
+    var inner = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    var outer = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     var newSize = resize({
       inner: inner,
       outer: outer
     });
 
     if (newSize) {
-      rend.size(newSize);
-      size = newSize;
+      size = rend.size(newSize);
     } else {
-      rend.size(inner);
-      size = inner;
+      size = rend.size(inner);
     }
 
-    instanceContext.rect = inner;
+    instanceContext.rect = extend(true, {
+      computedPhysical: size.computedPhysical,
+      computedOuter: outer.computed,
+      computedInner: inner.computed
+    }, inner);
+    size = extend(true, {
+      computedOuter: outer.computed,
+      computedInner: inner.computed
+    }, size);
   };
 
   fn.getRect = function () {
@@ -15004,6 +15324,10 @@ function componentFactory(definition) {
     }
 
     currentNodes = nodes;
+
+    if (rend.setKey && typeof config.key === 'string') {
+      rend.setKey(config.key);
+    }
   };
 
   fn.updated = updated;
@@ -15107,7 +15431,10 @@ function componentFactory(definition) {
     style: function style() {
       return _style;
     },
-    _DO_NOT_USE_getInfo: _DO_NOT_USE_getInfo.bind(definitionContext)
+    _DO_NOT_USE_getInfo: _DO_NOT_USE_getInfo.bind(definitionContext),
+    isVisible: function isVisible() {
+      return _isVisible;
+    }
   });
 
   fn.getBrushedShapes = function getBrushedShapes(brushCtx, mode, props) {
@@ -15183,6 +15510,10 @@ function componentFactory(definition) {
   fn.mount = function () {
     element = rend.element && rend.element() ? element : rend.appendTo(container);
 
+    if (rend.setKey && typeof config.key === 'string') {
+      rend.setKey(config.key);
+    }
+
     if (_settings.brush) {
       addBrushStylers();
       addBrushTriggers();
@@ -15190,6 +15521,7 @@ function componentFactory(definition) {
 
     setUpEmitter(instanceContext, emitter, config);
     setUpEmitter(definitionContext, emitter, definition);
+    _isVisible = true;
   };
 
   fn.mounted = function () {
@@ -15198,11 +15530,7 @@ function componentFactory(definition) {
 
   fn.unmount = function () {
     [instanceContext, definitionContext].forEach(function (ctx) {
-      (ctx.eventListeners || []).forEach(function (_ref2) {
-        var event = _ref2.event,
-            listener = _ref2.listener;
-        emitter.removeListener(event, listener);
-      });
+      tearDownEmitter(ctx, emitter);
     });
     brushTriggers.tap = [];
     brushTriggers.over = [];
@@ -15211,6 +15539,7 @@ function componentFactory(definition) {
     });
     brushStylers.length = 0;
     beforeUnmount();
+    _isVisible = false;
   };
 
   fn.onBrushTap = function (e) {
@@ -16240,23 +16569,23 @@ function chartFn(definition, context) {
     }, {
       logger: logger
     });
-    currentScales = builder$1(scales, {
-      dataset: dataset,
-      collection: dataCollection
-    }, {
-      scale: registries.scale,
+    var deps = {
       theme: theme,
       logger: logger
-    });
-    currentFormatters = builder(formatters, {
+    };
+    currentScales = collection$1(scales, {
       dataset: dataset,
       collection: dataCollection
-    }, {
-      formatter: registries.formatter,
-      theme: theme,
-      logger: logger
-    });
-    currentScrollApis = builder$2(scroll, currentScrollApis);
+    }, _objectSpread({}, deps, {
+      scale: registries.scale
+    }));
+    currentFormatters = collection(formatters, {
+      dataset: dataset,
+      collection: dataCollection
+    }, _objectSpread({}, deps, {
+      formatter: registries.formatter
+    }));
+    currentScrollApis = builder(scroll, currentScrollApis);
   };
 
   var render = function render() {
@@ -16333,9 +16662,9 @@ function chartFn(definition, context) {
     };
     var ret = [];
     visibleComponents.forEach(function (c) {
-      var r = c.instance.getRect(); // Do test on physical rect
+      var r = c.instance.getRect(); // Do test on physical rect and use computed rect if available, otherwise fallback to computing a new rect for legacy support
 
-      if (testRectPoint({
+      if (testRectPoint(r.computedPhysical ? r.computedPhysical : {
         x: r.margin.left + r.x * r.scaleRatio.x,
         y: r.margin.top + r.y * r.scaleRatio.y,
         width: r.width * r.scaleRatio.x,
@@ -16833,22 +17162,22 @@ function chartFn(definition, context) {
     return dataCollection(key);
   };
   /**
-   * Get the all registered scales
-   * @returns {Array<scale>} Array of scales
+   * Get all registered scales
+   * @returns {Object<string,scale>}
    */
 
 
   instance.scales = function scales() {
-    return currentScales;
+    return currentScales.all();
   };
   /**
-   * Get the all registered formatters
-   * @returns {Array<formatter>} Array of formatters
+   * Get all registered formatters
+   * @returns {Object<string,formatter>}
    */
 
 
   instance.formatters = function formatters() {
-    return currentFormatters;
+    return currentFormatters.all();
   };
   /**
    * Get or create brush context for this chart
@@ -16878,14 +17207,7 @@ function chartFn(definition, context) {
 
 
   instance.scale = function scale(v) {
-    return getOrCreateScale(v, currentScales, {
-      dataset: dataset,
-      collection: dataCollection
-    }, {
-      scale: registries.scale,
-      theme: theme,
-      logger: logger
-    });
+    return currentScales.get(v);
   };
   /**
    * Get or create a formatter for this chart
@@ -16904,14 +17226,7 @@ function chartFn(definition, context) {
 
 
   instance.formatter = function formatter(v) {
-    return getOrCreateFormatter(v, currentFormatters, {
-      dataset: dataset,
-      collection: dataCollection
-    }, {
-      formatter: registries.formatter,
-      theme: theme,
-      logger: logger
-    });
+    return currentFormatters.get(v);
   };
   /**
    * @param {boolean} [val] - Toggle brushing on or off. If value is omitted, a toggle action is applied to the current state.
@@ -18136,9 +18451,7 @@ function buildShapes(_ref5) {
     var boxCenter = boxPadding + item.major + boxWidth / 2;
     var rendWidth = width;
     var rendHeight = height;
-    var allValidValues = [item.min, item.start, item.med, item.end, item.max].filter(function (v) {
-      return typeof v === 'number' && !Number.isNaN(v);
-    });
+    var allValidValues = [item.min, item.start, item.med, item.end, item.max].filter(isNumber);
     var isLowerOutOfBounds = Math.min.apply(Math, _toConsumableArray$1(allValidValues)) < 0 && Math.max.apply(Math, _toConsumableArray$1(allValidValues)) < 0;
     var isHigherOutOfBounds = Math.min.apply(Math, _toConsumableArray$1(allValidValues)) > 1 && Math.max.apply(Math, _toConsumableArray$1(allValidValues)) > 1;
     var isOutOfBounds = isLowerOutOfBounds || isHigherOutOfBounds;
@@ -22841,11 +23154,12 @@ function resolveTarget(ctx) {
       resolved.targetFillRect = fillBounds;
     }
   } else if (target && target.rect) {
+    var innerRect = target.rect.computedInner;
     resolved.targetRect = {
-      x: target.rect.x - ctx.state.rect.x,
-      y: target.rect.y - ctx.state.rect.y,
-      width: target.rect.width,
-      height: target.rect.height
+      x: innerRect.x - ctx.state.rect.x,
+      y: innerRect.y - ctx.state.rect.y,
+      width: innerRect.width,
+      height: innerRect.height
     };
   }
 
@@ -22859,6 +23173,7 @@ function resolveTarget(ctx) {
  * @property {object} [bubbles]
  * @property {boolean} [bubbles.show=true] - True to show label bubble, false otherwise
  * @property {string} [bubbles.align=start] - Where to anchor bubble [start|end]
+ * @property {function} [bubbles.label] - Callback function for the labels
  * @property {object} [target]
  * @property {string} [target.component] - Render matching overlay on target component
  * @property {string} [target.selector] - Instead of targeting a component, target one or more shapes
@@ -22921,7 +23236,7 @@ var brushRangeComponent = {
     };
   },
   beforeRender: function beforeRender(opts) {
-    this.state.rect = opts.size;
+    this.state.rect = opts.size.computedInner;
   },
   renderRanges: function renderRanges() {
     if (!this.state.started) {
@@ -22931,6 +23246,8 @@ var brushRangeComponent = {
     }
   },
   render: function render(h) {
+    var _this = this;
+
     var stngs = this.settings.settings;
     this.state.direction = stngs.direction === 'vertical' ? VERTICAL : HORIZONTAL;
     var offset = this.renderer.element().getBoundingClientRect();
@@ -22954,19 +23271,32 @@ var brushRangeComponent = {
       coord: this.state.direction === VERTICAL ? 'y' : 'x',
       pos: this.state.direction === VERTICAL ? 'deltaY' : 'deltaX'
     };
+    this.state.format = typeof stngs.bubbles.label === 'function' ? function (v, r) {
+      return stngs.bubbles.label.call(undefined, {
+        datum: v,
+        data: r,
+        scale: scale,
+        resources: {
+          scale: _this.chart.scale,
+          formatter: _this.chart.formatter
+        }
+      });
+    } : false;
 
     if (!{}.hasOwnProperty.call(scale, 'norm')) {
       // Non-linear scale if norm method is unavailable
       this.state.scale = scaleLinear$$1();
       this.state.scale.data = scale.data;
 
-      this.state.format = function (v, r) {
-        if (!rangesOverlap(scale.range(), r)) {
-          return '-';
-        }
+      if (!this.state.format) {
+        this.state.format = function (v, r) {
+          if (!rangesOverlap(scale.range(), r)) {
+            return '-';
+          }
 
-        return findClosestLabel(v, scale);
-      };
+          return findClosestLabel(v, scale);
+        };
+      }
 
       this.state.fauxBrushInstance = brush();
 
@@ -22980,7 +23310,7 @@ var brushRangeComponent = {
       this.state.scale = scale;
       var scaleData = this.state.scale.data();
 
-      if (scaleData && scaleData.fields && scaleData.fields[0]) {
+      if (!this.state.format && scaleData && scaleData.fields && scaleData.fields[0]) {
         this.state.format = scaleData.fields[0].formatter();
       }
     }
@@ -23221,7 +23551,7 @@ var brushAreaDirectionalComponent = {
     };
   },
   beforeRender: function beforeRender(opts) {
-    this.rect = opts.size;
+    this.rect = opts.size.computedInner;
   },
   render: function render(h) {
     var _this = this;
@@ -23825,6 +24155,104 @@ function lassoBrush(picasso) {
   picasso.component('brush-lasso', brushLassoComponent);
 }
 
+/**
+ * Using the basic example found here: https://en.wikipedia.org/wiki/Binary_search_algorithm
+ *
+ * Finds the first node that may intersect the label.
+ * @private
+ */
+
+function binaryLeftSearch(labelBounds, ary, coord, side, extractBounds) {
+  var left = 0;
+  var right = ary.length - 1;
+  var bounds;
+
+  while (left < right) {
+    var m = Math.floor((left + right) / 2);
+    bounds = extractBounds(ary[m]);
+
+    if (bounds[coord] + bounds[side] < labelBounds[coord]) {
+      // label is on right side
+      left = m + 1;
+    } else {
+      // label is on the left side
+      right = m;
+    }
+  }
+
+  return left;
+}
+/**
+ * The purpose of this module is to act as a filtering function to remove any labels
+ * that meets one of the following criterias:
+ * -- The label is not fully inside the container, such that it would be fully or partially clipped if rendered
+ * -- The label overlaps another label
+ * -- The label overlaps another bar which is not the bar the label is originating from
+ *
+ * Assumes that the nodes are sorted from left/top to right/down, as that allows
+ * some optimizations to be performed.
+ * @private
+ * @returns {function} Filter function, returns false if label be removed and true otherwise
+ */
+
+function filterOverlappingLabels$1(_ref) {
+  var orientation = _ref.orientation,
+      targetNodes = _ref.targetNodes,
+      labels = _ref.labels,
+      container = _ref.container;
+  var findLeft = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : binaryLeftSearch;
+  var renderLabels = [];
+  var coord = orientation === 'v' ? 'x' : 'y';
+  var side = orientation === 'v' ? 'width' : 'height';
+
+  var getTextBounds = function getTextBounds(item) {
+    return item.textBounds;
+  };
+
+  var getNodeBounds = function getNodeBounds(item) {
+    return item.node.localBounds;
+  };
+
+  return function (doNotUse, labelIndex) {
+    var _labels$labelIndex = labels[labelIndex],
+        labelBounds = _labels$labelIndex.textBounds,
+        labelNode = _labels$labelIndex.node; // ### Test if label is not fully inside container ###
+
+    if (!rectContainsRect(labelBounds, container)) {
+      return false;
+    } // ### Test label to label collision ###
+
+
+    var leftStartLabel = findLeft(labelBounds, renderLabels, coord, side, getTextBounds);
+
+    for (var i = leftStartLabel; i < renderLabels.length; i++) {
+      if (testRectRect(labelBounds, renderLabels[i].textBounds)) {
+        return false;
+      }
+    } // ### Test label to node collision ###
+
+
+    var leftStartNode = findLeft(labelBounds, targetNodes, coord, side, getNodeBounds);
+    var labelRightBoundary = labelBounds[coord] + labelBounds[side];
+
+    for (var _i = leftStartNode; _i < targetNodes.length; _i++) {
+      var node = targetNodes[_i].node; // Do not test beyond this node, as they are assumed to not collide with the label
+
+      if (labelRightBoundary < node.localBounds[coord]) {
+        break;
+      }
+
+      if (testRectRect(labelBounds, node.localBounds) && labelNode !== node) {
+        return false;
+      }
+    } // No collision occured, allow the label to be rendered
+
+
+    renderLabels.push(labels[labelIndex]);
+    return true;
+  };
+}
+
 var LINE_HEIGHT = 1.5;
 var PADDING = 4; // const DOUBLE_PADDING = PADDING * 2;
 
@@ -23836,6 +24264,12 @@ function cbContext(node, chart) {
     formatter: chart.formatter,
     dataset: chart.dataset
   };
+}
+
+function isValidText(text) {
+  var type = _typeof(text);
+
+  return (type === 'string' || type === 'number') && text !== '';
 }
 
 function placeTextInRect(rect, text, opts) {
@@ -23855,22 +24289,36 @@ function placeTextInRect(rect, text, opts) {
   };
   var textMetrics = opts.textMetrics;
 
-  if (rect.width < opts.fontSize || rect.height < textMetrics.height) {
+  if (!opts.overflow && (rect.width < opts.fontSize || rect.height < textMetrics.height)) {
     return false;
   }
 
   if (opts.rotate) {
-    var wiggleHor = Math.max(0, rect.width - textMetrics.height / (LINE_HEIGHT * 0.8));
+    if (opts.overflow && rect.width < textMetrics.height) {
+      label.x = rect.x + rect.width / 2; // Use center of the rect
+
+      label.dx = opts.fontSize * 0.35; // Emulate the baseline heuristic for the 'central' attribute
+    } else {
+      var wiggleHor = Math.max(0, rect.width - textMetrics.height / (LINE_HEIGHT * 0.8));
+      label.x = rect.x + textMetrics.height / LINE_HEIGHT + opts.align * wiggleHor;
+    }
+
     var wiggleVert = Math.max(0, rect.height - textMetrics.width);
-    label.x = rect.x + textMetrics.height / LINE_HEIGHT + opts.align * wiggleHor;
     label.y = rect.y + opts.justify * wiggleVert;
     label.transform = "rotate(-90, ".concat(label.x + label.dx, ", ").concat(label.y + label.dy, ")");
   } else {
-    var wiggleWidth = Math.max(0, rect.width - textMetrics.width);
-    var wiggleHeight = Math.max(0, rect.height - textMetrics.height / (LINE_HEIGHT * 0.8)); // 0.8 - MAGIC NUMBER - need to figure out why this works the best
+    if (opts.overflow && rect.height < textMetrics.height) {
+      label.y = rect.y + rect.height / 2; // Use center of the rect
 
+      label.dy = opts.fontSize * 0.35; // Emulate the baseline heuristic for the 'central' attribute
+    } else {
+      var wiggleHeight = Math.max(0, rect.height - textMetrics.height / (LINE_HEIGHT * 0.8)); // 0.8 - MAGIC NUMBER - need to figure out why this works the best
+
+      label.y = rect.y + textMetrics.height / LINE_HEIGHT + opts.justify * wiggleHeight;
+    }
+
+    var wiggleWidth = Math.max(0, rect.width - textMetrics.width);
     label.x = rect.x + opts.align * wiggleWidth;
-    label.y = rect.y + textMetrics.height / LINE_HEIGHT + opts.justify * wiggleHeight;
   }
 
   return label;
@@ -23981,6 +24429,34 @@ function findBestPlacement(_ref2) {
     placement: placement
   };
 }
+
+function approxTextBounds(label, textMetrics, rotated, rect) {
+  var x = label.x + label.dx;
+  var y = label.y + label.dy;
+  var width = rotated ? textMetrics.width : Math.min(textMetrics.width, rect.width);
+  var height = rotated ? Math.min(textMetrics.height, rect.height) : textMetrics.height;
+  var PADDING_OFFSET = 0.1; // Needed to support a case when multiple bars are on the same location
+
+  var bounds = {
+    x: x - PADDING - PADDING_OFFSET,
+    y: y - height - PADDING - PADDING_OFFSET,
+    width: width + PADDING * 2 - PADDING_OFFSET,
+    height: height + PADDING * 2 - PADDING_OFFSET
+  };
+
+  if (rotated) {
+    var o = {
+      x: x - height / 2,
+      y: y - height / 2
+    };
+    return pointsToRect(rectToPoints(bounds).map(function (p) {
+      return rotate(p, toRadians(-90), o);
+    }));
+  }
+
+  return bounds;
+}
+
 function placeInBars(_ref3) {
   var chart = _ref3.chart,
       targetNodes = _ref3.targetNodes,
@@ -23989,7 +24465,14 @@ function placeInBars(_ref3) {
       collectiveOrientation = _ref3.collectiveOrientation;
   var findPlacement = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : findBestPlacement;
   var placer = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : placeTextInRect;
+  var postFilter = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : filterOverlappingLabels$1;
   var labels = [];
+  var postFilterContext = {
+    container: rect,
+    targetNodes: targetNodes,
+    labels: [],
+    orientation: collectiveOrientation
+  };
   var label;
   var target;
   var node;
@@ -24016,7 +24499,7 @@ function placeInBars(_ref3) {
     for (var j = 0; j < target.texts.length; j++) {
       text = target.texts[j];
 
-      if (!text) {
+      if (!isValidText(text)) {
         continue;
       }
 
@@ -24041,6 +24524,7 @@ function placeInBars(_ref3) {
         justify = placement.justify;
         fill = typeof placement.fill === 'function' ? placement.fill(arg, i) : placement.fill;
         var linkData = typeof lblStngs.linkData === 'function' ? lblStngs.linkData(arg, i) : undefined;
+        var overflow = typeof placement.overflow === 'function' ? placement.overflow(arg, i) : placement.overflow;
 
         if (direction === 'up') {
           justify = 1 - justify;
@@ -24050,6 +24534,11 @@ function placeInBars(_ref3) {
           justify = 1 - justify;
         }
 
+        if (direction === 'left') {
+          justify = 1 - justify;
+        }
+
+        var isRotated = !(collectiveOrientation === 'h' || fitsHorizontally);
         label = placer(bounds, text, {
           fill: fill,
           justify: orientation === 'h' ? placement.align : justify,
@@ -24057,7 +24546,8 @@ function placeInBars(_ref3) {
           fontSize: lblStngs.fontSize,
           fontFamily: lblStngs.fontFamily,
           textMetrics: measured,
-          rotate: !(collectiveOrientation === 'h' || fitsHorizontally)
+          rotate: isRotated,
+          overflow: !!overflow
         });
 
         if (label) {
@@ -24066,12 +24556,16 @@ function placeInBars(_ref3) {
           }
 
           labels.push(label);
+          postFilterContext.labels.push({
+            node: node,
+            textBounds: approxTextBounds(label, measured, isRotated, bounds)
+          });
         }
       }
     }
   }
 
-  return labels;
+  return labels.filter(postFilter(postFilterContext));
 }
 function precalculate(_ref4) {
   var nodes = _ref4.nodes,
@@ -24113,9 +24607,9 @@ function precalculate(_ref4) {
 
     for (var j = 0; j < labelSettings.length; j++) {
       lblStng = labelSettings[j];
-      text = typeof lblStng.label === 'function' ? lblStng.label(arg, i) : '';
+      text = typeof lblStng.label === 'function' ? lblStng.label(arg, i) : undefined;
 
-      if (!text) {
+      if (!isValidText(text)) {
         continue; // eslint-ignore-line
       }
 
@@ -24160,6 +24654,7 @@ function precalculate(_ref4) {
  * @property {number} [labels[].placements[].justify=0] - Placement of the label along the direction of the bar
  * @property {number} [labels[].placements[].align=0.5] - Placement of the label along the perpendicular direction of the bar
  * @property {string} [labels[].placements[].fill='#333'] - Color of the label
+ * @property {boolean} [labels[].placements[].overflow=false] - True if the label is allowed to overflow the bar
  */
 
 function bars(_ref5) {
@@ -24200,6 +24695,11 @@ function bars(_ref5) {
       hasHorizontalDirection = _precalculate.hasHorizontalDirection,
       targetNodes = _precalculate.targetNodes;
 
+  var coord = hasHorizontalDirection ? 'y' : 'x';
+  var side = hasHorizontalDirection ? 'height' : 'width';
+  targetNodes.sort(function (a, b) {
+    return a.node.localBounds[coord] + a.node.localBounds[side] - (b.node.localBounds[coord] + b.node.localBounds[side]);
+  });
   return placer({
     chart: chart,
     targetNodes: targetNodes,
@@ -24210,7 +24710,7 @@ function bars(_ref5) {
   });
 }
 
-function normalize(angle) {
+function normalize$1(angle) {
   var PI2 = Math.PI * 2;
   return (angle % PI2 + PI2) % PI2; // normalize
 }
@@ -24351,7 +24851,7 @@ function getHorizontalInsideSliceRect(_ref2) {
       end = slice.end,
       innerRadius = slice.innerRadius,
       outerRadius = slice.outerRadius;
-  var middle = normalize((start + end) / 2);
+  var middle = normalize$1((start + end) / 2);
   var size = {
     width: measured.width + padding * 2,
     height: measured.height + padding * 2
@@ -24427,7 +24927,7 @@ function getRotatedInsideSliceRect(_ref3) {
     return null;
   }
 
-  var middle = normalize((start + end) / 2);
+  var middle = normalize$1((start + end) / 2);
   var r = outerRadius - padding;
   var bounds = {
     x: Math.sin(middle) * r,
@@ -24467,7 +24967,7 @@ function getRotatedOusideSliceRect(_ref4) {
     }
   }
 
-  var middle = normalize((start + end) / 2);
+  var middle = normalize$1((start + end) / 2);
   var x = Math.sin(middle) * r;
   var y = -Math.cos(middle) * r;
   var maxWidth = measured.width;
@@ -24547,7 +25047,7 @@ function adjustBounds(bounds, context, slice) {
       end = slice.end,
       offset = slice.offset,
       outerRadius = slice.outerRadius;
-  var middle = normalize((start + end) / 2);
+  var middle = normalize$1((start + end) / 2);
   var section = Math.floor(middle / (Math.PI / 2));
 
   switch (section) {
@@ -24657,7 +25157,7 @@ function updateContext(_ref5) {
   var _node$desc$slice = node.desc.slice,
       start = _node$desc$slice.start,
       end = _node$desc$slice.end;
-  var middle = normalize((start + end) / 2);
+  var middle = normalize$1((start + end) / 2);
   var section = Math.floor(middle / (Math.PI / 2));
 
   switch (section) {
@@ -24702,7 +25202,7 @@ function getHorizontalOusideSliceRect(_ref6) {
       end = slice.end,
       outerRadius = slice.outerRadius,
       offset = slice.offset;
-  var middle = normalize((start + end) / 2);
+  var middle = normalize$1((start + end) / 2);
   var section = Math.floor(middle / (Math.PI / 2));
 
   if (outOfSpace(context, section, view)) {
@@ -24923,7 +25423,7 @@ function sortNodes(nodes) {
     var _nodes$i$desc$slice = nodes[i].desc.slice,
         start = _nodes$i$desc$slice.start,
         end = _nodes$i$desc$slice.end;
-    var middle = normalize((start + end) / 2);
+    var middle = normalize$1((start + end) / 2);
     var section = Math.floor(middle / (Math.PI / 2));
 
     switch (section) {
@@ -24949,8 +25449,8 @@ function sortNodes(nodes) {
   }
 
   var sortFn = function sortFn(a, b) {
-    var middleA = normalize((a.desc.slice.start + a.desc.slice.end) / 2);
-    var middleB = normalize((b.desc.slice.start + b.desc.slice.end) / 2);
+    var middleA = normalize$1((a.desc.slice.start + a.desc.slice.end) / 2);
+    var middleB = normalize$1((b.desc.slice.start + b.desc.slice.end) / 2);
     return middleA - middleB;
   };
 
@@ -27764,7 +28264,7 @@ var definition = {
   render: function render() {},
   beforeRender: function beforeRender(_ref) {
     var size = _ref.size;
-    this.rect = size;
+    this.rect = size.computedInner;
   },
   start: function start(e) {
     this.state.boundingRect = this.renderer.element().getBoundingClientRect();
@@ -28363,13 +28863,9 @@ function _getComponentBoundsFromNode(node, pointer, chart) {
   }
 
   var componentSize = comp.rect;
-  return {
-    x: componentSize.margin.left + componentSize.x * componentSize.scaleRatio.x,
-    y: componentSize.margin.top + componentSize.y * componentSize.scaleRatio.y,
-    width: componentSize.width * componentSize.scaleRatio.x,
-    height: componentSize.height * componentSize.scaleRatio.y,
+  return extend({
     scaleRatio: componentSize.scaleRatio
-  };
+  }, componentSize.computedInner);
 }
 
 function _getNodeBoundsRelativeToTarget(node, pointer, chart) {
@@ -29787,8 +30283,13 @@ function () {
     key: "ancestors",
     get: function get() {
       if (!this._ancestors) {
-        var p = this._parent;
-        this._ancestors = p ? [p].concat(p.ancestors) : [];
+        this._ancestors = [];
+
+        if (this.parent) {
+          var _this$_ancestors;
+
+          (_this$_ancestors = this._ancestors).push.apply(_this$_ancestors, [this.parent].concat(_toConsumableArray$1(this.parent.ancestors)));
+        }
       }
 
       return this._ancestors;
@@ -29802,17 +30303,17 @@ function () {
   }, {
     key: "descendants",
     get: function get() {
-      var r = [],
-          i,
-          len,
-          c;
+      var r = [];
+      var len = this.children.length;
+      var i;
+      var c;
 
-      for (i = 0, len = this._children.length; i < len; i++) {
-        c = this._children[i];
+      for (i = 0, len; i < len; i++) {
+        c = this.children[i];
         r.push(c);
 
-        if (c._children.length) {
-          r = r.concat(c.descendants);
+        if (c.children.length) {
+          r.push.apply(r, _toConsumableArray$1(c.descendants));
         }
       }
 
@@ -31493,17 +31994,28 @@ function () {
 
     _classCallCheck$1(this, SceneNode);
 
-    this._bounds = node.boundingRect ? function () {
-      var withTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
-      return node.boundingRect(withTransform);
-    } : function () {
-      return {
+    this._bounds = function () {
+      var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+
+      var _ref = node.boundingRect ? node.boundingRect(includeTransform) : {
         x: 0,
         y: 0,
         width: 0,
         height: 0
+      },
+          x = _ref.x,
+          y = _ref.y,
+          width = _ref.width,
+          height = _ref.height;
+
+      return {
+        x: x,
+        y: y,
+        width: width,
+        height: height
       };
     };
+
     this._attrs = node.attrs;
     this._type = node.type;
     this._data = node.data;
@@ -31525,6 +32037,21 @@ function () {
     this._parent = function () {
       return node.parent ? new SceneNode(node.parent) : null;
     };
+
+    this._cache = {
+      elementBoundingRect: null
+    };
+
+    this._getElementBoundingRect = function () {
+      if (!_this._cache.elementBoundingRect && _this.element) {
+        _this._cache.elementBoundingRect = _this.element.getBoundingClientRect();
+      }
+
+      return _this._cache.elementBoundingRect || {
+        left: 0,
+        top: 0
+      };
+    };
   }
   /**
    * Get child nodes
@@ -31533,6 +32060,58 @@ function () {
 
 
   _createClass$1(SceneNode, [{
+    key: "boundsRelativeTo",
+
+    /**
+     * Bounding rectangle of the node, relative a target.
+     *
+     * If target is an HTMLElement, the bounds are relative to the HTMLElement.
+     * Any other target type will return the bounds relative to the viewport of the browser.
+     *
+     * @param {HTMLElement|any} target
+     * @param {boolean} includeTransform - Whether to include any applied transforms on the node
+     * @returns {rect}
+     * @example
+     *
+     * node.boundsRelativeTo($('div'));
+     * node.boundsRelativeTo('viewport');
+     */
+    value: function boundsRelativeTo(target) {
+      var includeTransform = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+      var type = _typeof(target);
+
+      var bounds = includeTransform ? this.bounds : this.localBounds;
+
+      var selfRect = this._getElementBoundingRect();
+
+      var dx = selfRect.left;
+      var dy = selfRect.top;
+
+      if (type === 'object' && target !== null && typeof target.getBoundingClientRect === 'function') {
+        var _target$getBoundingCl = target.getBoundingClientRect(),
+            _target$getBoundingCl2 = _target$getBoundingCl.left,
+            left = _target$getBoundingCl2 === void 0 ? 0 : _target$getBoundingCl2,
+            _target$getBoundingCl3 = _target$getBoundingCl.top,
+            top = _target$getBoundingCl3 === void 0 ? 0 : _target$getBoundingCl3;
+
+        dx -= left;
+        dy -= top;
+      }
+
+      bounds.x += dx;
+      bounds.y += dy;
+      return bounds;
+    }
+    /**
+     * Collider of the node. Transform on the node has been applied to the collider shape, if any, but excluding scaling transform related to devicePixelRatio.
+     * Origin is in the top-left corner of the scene element.
+     *
+     * If node has no collider, null is returned.
+     * @type {line|rect|circle|path}
+     */
+
+  }, {
     key: "children",
     get: function get() {
       return this._children();
@@ -31586,6 +32165,7 @@ function () {
   }, {
     key: "element",
     set: function set(e) {
+      this._cache.elementBoundingRect = null;
       this._element = e;
     }
     /**
@@ -31645,14 +32225,6 @@ function () {
 
       return bounds;
     }
-    /**
-     * Collider of the node. Transform on the node has been applied to the collider shape, if any, but excluding scaling transform related to devicePixelRatio.
-     * Origin is in the top-left corner of the scene element.
-     *
-     * If node has no collider, null is returned.
-     * @type {line|rect|circle|path}
-     */
-
   }, {
     key: "collider",
     get: function get() {
@@ -31938,8 +32510,8 @@ function hasCollisionOnNode(node, shape) {
 /**
  * @typedef {object} node-def
  * @property {string} type
- * @property {string|gradient-def} [fill] - {@link https://www.w3.org/TR/fill-stroke-3/#fill-shorthand}
- * @property {string|gradient-def} [stroke] - {@link https://www.w3.org/TR/fill-stroke-3/#propdef-stroke}
+ * @property {string|gradient-def|pattern-def} [fill] - {@link https://www.w3.org/TR/fill-stroke-3/#fill-shorthand}
+ * @property {string|gradient-def|pattern-def} [stroke] - {@link https://www.w3.org/TR/fill-stroke-3/#propdef-stroke}
  * @property {number} [strokeWidth] - {@link https://www.w3.org/TR/fill-stroke-3/#propdef-stroke-width}
  * @property {string|number[]} [strokeDasharray] - {@link https://www.w3.org/TR/fill-stroke-3/#propdef-stroke-dasharray}
  * @property {number} [opacity] - {@link https://www.w3.org/TR/css-color-4/#propdef-opacity}
@@ -31980,7 +32552,9 @@ function (_Node) {
       this.node = v;
       var data = v.data,
           desc = v.desc,
-          tag = v.tag;
+          tag = v.tag,
+          strokeReference = v.strokeReference,
+          fillReference = v.fillReference;
       assignMappedAttribute(this.attrs, v);
 
       if (typeof data !== 'undefined') {
@@ -31993,6 +32567,14 @@ function (_Node) {
 
       if (typeof tag === 'string') {
         this.tag = tag;
+      }
+
+      if (typeof strokeReference === 'string') {
+        this.strokeReference = strokeReference;
+      }
+
+      if (typeof fillReference === 'string') {
+        this.fillReference = fillReference;
       }
     }
   }, {
@@ -32242,17 +32824,7 @@ function (_Node) {
 
       if (c._parent && c._parent !== this) {
         c._parent.removeChild(c);
-      } // *
-      // really expensive for large arrays
-
-
-      var indx = this._children.indexOf(c); // if child already exists -> remove it, and the push it in last
-
-
-      if (indx >= 0) {
-        this._children.splice(indx, 1);
-      } // * /
-
+      }
 
       this._children.push(c);
 
@@ -32329,31 +32901,6 @@ function (_Node) {
 
 var NC = NodeContainer.prototype;
 
-function reCalcBoundingRect(c, child) {
-  var includeTransform = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-
-  if (typeof child.bounds !== 'undefined') {
-    var _child$bounds = child.bounds(includeTransform),
-        _child$bounds2 = _slicedToArray(_child$bounds, 3),
-        p0 = _child$bounds2[0],
-        p2 = _child$bounds2[2];
-
-    var xMin = p0.x,
-        yMin = p0.y;
-    var xMax = p2.x,
-        yMax = p2.y;
-
-    var _xMax = isNaN(c._boundingRect.width) ? xMax : Math.max(xMax, c._boundingRect.width + c._boundingRect.x);
-
-    var _yMax = isNaN(c._boundingRect.height) ? yMax : Math.max(yMax, c._boundingRect.height + c._boundingRect.y);
-
-    c._boundingRect.x = isNaN(c._boundingRect.x) ? xMin : Math.min(xMin, c._boundingRect.x);
-    c._boundingRect.y = isNaN(c._boundingRect.y) ? yMin : Math.min(yMin, c._boundingRect.y);
-    c._boundingRect.width = _xMax - c._boundingRect.x;
-    c._boundingRect.height = _yMax - c._boundingRect.y;
-  }
-}
-
 var Container =
 /*#__PURE__*/
 function (_DisplayObject) {
@@ -32372,7 +32919,6 @@ function (_DisplayObject) {
 
     _this.set(s);
 
-    _this._boundingRect = {};
     return _this;
   }
 
@@ -32388,31 +32934,76 @@ function (_DisplayObject) {
         type: null
       }, collider);
       this.collider = opts;
+      this.__boundingRect = {
+        true: null,
+        false: null
+      };
+      this.__bounds = {
+        true: null,
+        false: null
+      };
+    }
+  }, {
+    key: "appendChildRect",
+    value: function appendChildRect(child, includeTransform) {
+      if (typeof child.bounds !== 'undefined') {
+        var rect = this.__boundingRect[includeTransform] || {};
+
+        var _child$bounds = child.bounds(includeTransform),
+            _child$bounds2 = _slicedToArray(_child$bounds, 3),
+            p0 = _child$bounds2[0],
+            p2 = _child$bounds2[2];
+
+        var xMin = p0.x,
+            yMin = p0.y;
+        var xMax = p2.x,
+            yMax = p2.y;
+
+        var _xMax = isNaN(rect.width) ? xMax : Math.max(xMax, rect.width + rect.x);
+
+        var _yMax = isNaN(rect.height) ? yMax : Math.max(yMax, rect.height + rect.y);
+
+        rect.x = isNaN(rect.x) ? xMin : Math.min(xMin, rect.x);
+        rect.y = isNaN(rect.y) ? yMin : Math.min(yMin, rect.y);
+        rect.width = _xMax - rect.x;
+        rect.height = _yMax - rect.y;
+        this.__boundingRect[includeTransform] = rect;
+      }
     }
   }, {
     key: "boundingRect",
     value: function boundingRect() {
       var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-      var num = this.children.length;
-      this._boundingRect = {};
 
-      for (var i = 0; i < num; i++) {
-        reCalcBoundingRect(this, this.children[i], includeTransform);
+      if (this.__boundingRect[includeTransform] !== null) {
+        return this.__boundingRect[includeTransform];
       }
 
-      return extend({
+      var num = this.children.length;
+
+      for (var i = 0; i < num; i++) {
+        this.appendChildRect(this.children[i], includeTransform);
+      }
+
+      this.__boundingRect[includeTransform] = extend({
         x: 0,
         y: 0,
         width: 0,
         height: 0
-      }, this._boundingRect);
+      }, this.__boundingRect[includeTransform]);
+      return this.__boundingRect[includeTransform];
     }
   }, {
     key: "bounds",
     value: function bounds() {
       var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+      if (this.__bounds[includeTransform] !== null) {
+        return this.__bounds[includeTransform];
+      }
+
       var rect = this.boundingRect(includeTransform);
-      return [{
+      this.__bounds[includeTransform] = [{
         x: rect.x,
         y: rect.y
       }, {
@@ -32425,6 +33016,7 @@ function (_DisplayObject) {
         x: rect.x,
         y: rect.y + rect.height
       }];
+      return this.__bounds[includeTransform];
     }
   }, {
     key: "addChild",
@@ -32432,14 +33024,14 @@ function (_DisplayObject) {
       var r = NC.addChild.call(this, c);
 
       if (this._collider && this._collider.type === 'bounds') {
-        reCalcBoundingRect(this, c, true);
+        this.appendChildRect(c, true);
         var opts = extend({
           type: 'bounds',
           x: 0,
           y: 0,
           width: 0,
           height: 0
-        }, this._boundingRect);
+        }, this.__boundingRect.true);
         this.collider = opts;
       }
 
@@ -32453,7 +33045,7 @@ function (_DisplayObject) {
 
       if (this._collider && this._collider.type === 'bounds' && num > 0) {
         for (var i = 0; i < num; i++) {
-          reCalcBoundingRect(this, children[i], true);
+          this.appendChildRect(children[i], true);
         }
 
         var opts = extend({
@@ -32462,7 +33054,7 @@ function (_DisplayObject) {
           y: 0,
           width: 0,
           height: 0
-        }, this._boundingRect);
+        }, this.__boundingRect.true);
         this.collider = opts;
       }
 
@@ -32483,6 +33075,14 @@ function (_DisplayObject) {
       NC.removeChild.call(this, c);
 
       if (this._collider && this._collider.type === 'bounds') {
+        this.__boundingRect = {
+          true: null,
+          false: null
+        };
+        this.__bounds = {
+          true: null,
+          false: null
+        };
         var opts = extend(this.boundingRect(true), {
           type: 'bounds'
         });
@@ -32497,6 +33097,14 @@ function (_DisplayObject) {
       NC.removeChildren.call(this, children);
 
       if (this._collider && this._collider.type === 'bounds') {
+        this.__boundingRect = {
+          true: null,
+          false: null
+        };
+        this.__bounds = {
+          true: null,
+          false: null
+        };
         var opts = extend(this.boundingRect(true), {
           type: 'bounds'
         });
@@ -32610,7 +33218,7 @@ function (_DisplayObject) {
       for (var i = 0, len = allowedAttrs.length; i !== len; i++) {
         attrKey = allowedAttrs[i];
 
-        if (v[attrKey]) {
+        if (typeof v[attrKey] !== 'undefined') {
           attrs[attrKey] = v[attrKey];
         }
       }
@@ -32658,6 +33266,120 @@ function create$f() {
   }
 
   return _construct(GradientItem, s);
+}
+
+/**
+ * @experimental
+ * @typedef {object} pattern-def
+ * @property {'pattern'} type
+ * @property {string} fill
+ * @property {number} width
+ * @property {number} height
+ * @property {object[]} shapes
+ * @example
+ * Stripe pattern
+ * ```js
+ * {
+ *   type: 'pattern',
+ *   fill: 'red',
+ *   width: 4,
+ *   height: 4,
+ *   shapes: [
+ *     { type: 'rect', x: 3, y: 0, width: 1, height: 1 },
+ *     { type: 'rect', x: 2, y: 1, width: 1, height: 1 },
+ *     { type: 'rect', x: 1, y: 2, width: 1, height: 1 },
+ *     { type: 'rect', x: 0, y: 3, width: 1, height: 1 },
+ *   ]
+ * }
+ * ```
+ */
+
+var NC$2 = NodeContainer.prototype;
+var allowedAttrs$1 = ['patternUnits', 'x', 'y', 'width', 'height', 'id'];
+
+var PatternItem =
+/*#__PURE__*/
+function (_DisplayObject) {
+  _inherits(PatternItem, _DisplayObject);
+
+  function PatternItem() {
+    var _this;
+
+    var s = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+    _classCallCheck$1(this, PatternItem);
+
+    var _s$type = s.type,
+        type = _s$type === void 0 ? 'container' : _s$type;
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(PatternItem).call(this, type));
+
+    _this.set(s);
+
+    _this._boundingRect = {};
+    return _this;
+  }
+
+  _createClass$1(PatternItem, [{
+    key: "set",
+    value: function set() {
+      var v = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+      _get(_getPrototypeOf(PatternItem.prototype), "set", this).call(this, v);
+
+      var attrs = this.attrs;
+      var attrKey = '';
+
+      for (var i = 0, len = allowedAttrs$1.length; i !== len; i++) {
+        attrKey = allowedAttrs$1[i];
+
+        if (typeof v[attrKey] !== 'undefined') {
+          attrs[attrKey] = v[attrKey];
+        }
+      }
+    }
+  }, {
+    key: "addChild",
+    value: function addChild(c) {
+      var r = NC$2.addChild.call(this, c);
+      return r;
+    }
+  }, {
+    key: "addChildren",
+    value: function addChildren(children) {
+      var r = NC$2.addChildren.call(this, children);
+      return r;
+    }
+  }, {
+    key: "removeChild",
+    value: function removeChild(c) {
+      c._stage = null;
+      var desc = c.descendants,
+          num = desc ? desc.length : 0,
+          i; // remove reference to stage from all descendants
+
+      for (i = 0; i < num; i++) {
+        desc[i]._stage = null;
+      }
+
+      NC$2.removeChild.call(this, c);
+      return this;
+    }
+  }, {
+    key: "removeChildren",
+    value: function removeChildren(children) {
+      NC$2.removeChildren.call(this, children);
+      return this;
+    }
+  }]);
+
+  return PatternItem;
+}(DisplayObject);
+function create$g() {
+  for (var _len = arguments.length, s = new Array(_len), _key = 0; _key < _len; _key++) {
+    s[_key] = arguments[_key];
+  }
+
+  return _construct(PatternItem, s);
 }
 
 /**
@@ -32728,11 +33450,24 @@ function (_DisplayObject) {
       }
 
       this.collider = opts;
+      this.__boundingRect = {
+        true: null,
+        false: null
+      };
+      this.__bounds = {
+        true: null,
+        false: null
+      };
     }
   }, {
     key: "boundingRect",
     value: function boundingRect() {
       var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+      if (this.__boundingRect[includeTransform] !== null) {
+        return this.__boundingRect[includeTransform];
+      }
+
       var p = rectToPoints(this.attrs);
       var pt = includeTransform && this.modelViewMatrix ? this.modelViewMatrix.transformPoints(p) : p;
 
@@ -32743,19 +33478,25 @@ function (_DisplayObject) {
           xMax = _getMinMax2[2],
           yMax = _getMinMax2[3];
 
-      return {
+      this.__boundingRect[includeTransform] = {
         x: xMin,
         y: yMin,
         width: xMax - xMin,
         height: yMax - yMin
       };
+      return this.__boundingRect[includeTransform];
     }
   }, {
     key: "bounds",
     value: function bounds() {
       var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+      if (this.__bounds[includeTransform] !== null) {
+        return this.__bounds[includeTransform];
+      }
+
       var rect = this.boundingRect(includeTransform);
-      return [{
+      this.__bounds[includeTransform] = [{
         x: rect.x,
         y: rect.y
       }, {
@@ -32768,12 +33509,13 @@ function (_DisplayObject) {
         x: rect.x,
         y: rect.y + rect.height
       }];
+      return this.__bounds[includeTransform];
     }
   }]);
 
   return Rect;
 }(DisplayObject);
-function create$g() {
+function create$h() {
   for (var _len = arguments.length, s = new Array(_len), _key = 0; _key < _len; _key++) {
     s[_key] = arguments[_key];
   }
@@ -32832,26 +33574,45 @@ function (_DisplayObject) {
       this.attrs.cy = cy;
       this.attrs.r = r;
       this.collider = opts;
+      this.__boundingRect = {
+        true: null,
+        false: null
+      };
+      this.__bounds = {
+        true: null,
+        false: null
+      };
     }
   }, {
     key: "boundingRect",
     value: function boundingRect() {
       var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-      // TODO Handle Circle bounds correctly for a circle transformed to an non axis aligned ellipse/circle
+
+      if (this.__boundingRect[includeTransform] !== null) {
+        return this.__boundingRect[includeTransform];
+      } // TODO Handle Circle bounds correctly for a circle transformed to an non axis aligned ellipse/circle
       // Current solution only rotate the bounds, giving a larger boundingRect if rotated
+
+
       var p = this.bounds(includeTransform);
-      return {
+      this.__boundingRect[includeTransform] = {
         x: p[0].x,
         y: p[0].y,
         width: p[2].x - p[0].x,
         height: p[2].y - p[0].y
       };
+      return this.__boundingRect[includeTransform];
     }
   }, {
     key: "bounds",
     value: function bounds() {
       var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-      // TODO Handle Circle bounds correctly for a circle transformed to an non axis aligned ellipse/circle
+
+      if (this.__bounds[includeTransform] !== null) {
+        return this.__bounds[includeTransform];
+      } // TODO Handle Circle bounds correctly for a circle transformed to an non axis aligned ellipse/circle
+
+
       var _this$attrs = this.attrs,
           cx = _this$attrs.cx,
           cy = _this$attrs.cy,
@@ -32887,7 +33648,7 @@ function (_DisplayObject) {
 
         w = xMax - xMin;
         h = yMax - yMin;
-        return [{
+        this.__bounds[includeTransform] = [{
           x: xMin,
           y: yMin
         }, {
@@ -32900,15 +33661,17 @@ function (_DisplayObject) {
           x: xMin,
           y: yMin + h
         }];
+      } else {
+        this.__bounds[includeTransform] = p;
       }
 
-      return p;
+      return this.__bounds[includeTransform];
     }
   }]);
 
   return Circle;
 }(DisplayObject);
-function create$h() {
+function create$i() {
   for (var _len = arguments.length, s = new Array(_len), _key = 0; _key < _len; _key++) {
     s[_key] = arguments[_key];
   }
@@ -32972,11 +33735,24 @@ function (_DisplayObject) {
         y2: y2
       };
       this.collider = extend(defaultCollider, collider);
+      this.__boundingRect = {
+        true: null,
+        false: null
+      };
+      this.__bounds = {
+        true: null,
+        false: null
+      };
     }
   }, {
     key: "boundingRect",
     value: function boundingRect() {
       var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+      if (this.__boundingRect[includeTransform] !== null) {
+        return this.__boundingRect[includeTransform];
+      }
+
       var p = lineToPoints(this.attrs);
 
       if (includeTransform && this.modelViewMatrix) {
@@ -32991,19 +33767,25 @@ function (_DisplayObject) {
           yMax = _getMinMax2[3];
 
       var hasSize = xMin !== xMax || yMin !== yMax;
-      return {
+      this.__boundingRect[includeTransform] = {
         x: xMin,
         y: yMin,
         width: hasSize ? Math.max(1, xMax - xMin) : 0,
         height: hasSize ? Math.max(1, yMax - yMin) : 0
       };
+      return this.__boundingRect[includeTransform];
     }
   }, {
     key: "bounds",
     value: function bounds() {
       var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+      if (this.__bounds[includeTransform] !== null) {
+        return this.__bounds[includeTransform];
+      }
+
       var rect = this.boundingRect(includeTransform);
-      return [{
+      this.__bounds[includeTransform] = [{
         x: rect.x,
         y: rect.y
       }, {
@@ -33016,12 +33798,13 @@ function (_DisplayObject) {
         x: rect.x,
         y: rect.y + rect.height
       }];
+      return this.__bounds[includeTransform];
     }
   }]);
 
   return Line;
 }(DisplayObject);
-function create$i() {
+function create$j() {
   for (var _len = arguments.length, s = new Array(_len), _key = 0; _key < _len; _key++) {
     s[_key] = arguments[_key];
   }
@@ -33199,11 +33982,24 @@ function (_DisplayObject) {
           }
         });
       }
+
+      this.__boundingRect = {
+        true: null,
+        false: null
+      };
+      this.__bounds = {
+        true: null,
+        false: null
+      };
     }
   }, {
     key: "boundingRect",
     value: function boundingRect() {
       var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+      if (this.__boundingRect[includeTransform] !== null) {
+        return this.__boundingRect[includeTransform];
+      }
 
       if (!this.points.length) {
         this.segments = this.segments.length ? this.segments : pathToPoints(this.attrs.d);
@@ -33219,19 +34015,25 @@ function (_DisplayObject) {
           xMax = _getMinMax2[2],
           yMax = _getMinMax2[3];
 
-      return {
+      this.__boundingRect[includeTransform] = {
         x: xMin || 0,
         y: yMin || 0,
         width: xMax - xMin || 0,
         height: yMax - yMin || 0
       };
+      return this.__boundingRect[includeTransform];
     }
   }, {
     key: "bounds",
     value: function bounds() {
       var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+      if (this.__bounds[includeTransform] !== null) {
+        return this.__bounds[includeTransform];
+      }
+
       var rect = this.boundingRect(includeTransform);
-      return [{
+      this.__bounds[includeTransform] = [{
         x: rect.x,
         y: rect.y
       }, {
@@ -33244,12 +34046,13 @@ function (_DisplayObject) {
         x: rect.x,
         y: rect.y + rect.height
       }];
+      return this.__bounds[includeTransform];
     }
   }]);
 
   return Path;
 }(DisplayObject);
-function create$j() {
+function create$k() {
   for (var _len = arguments.length, s = new Array(_len), _key = 0; _key < _len; _key++) {
     s[_key] = arguments[_key];
   }
@@ -33331,11 +34134,15 @@ function (_DisplayObject) {
       this.attrs.dx = dx;
       this.attrs.dy = dy;
       this.attrs.text = text;
-      this.attrs.title = title;
-      this._boundingRect = null; // Reset cache
 
-      if (boundingRect) {
-        this._boundingRect = boundingRect;
+      if (typeof title !== 'undefined') {
+        this.attrs.title = String(title);
+      }
+
+      if (_typeof(boundingRect) === 'object') {
+        this._textBoundsFn = function () {
+          return boundingRect;
+        };
       } else if (typeof textBoundsFn === 'function') {
         this._textBoundsFn = textBoundsFn;
       }
@@ -33343,13 +34150,29 @@ function (_DisplayObject) {
       this.collider = extend({
         type: hasData(this) ? 'bounds' : null
       }, collider);
+      this.__boundingRect = {
+        true: null,
+        false: null
+      };
+      this.__bounds = {
+        true: null,
+        false: null
+      };
     }
   }, {
     key: "boundingRect",
     value: function boundingRect() {
       var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
 
-      if (!this._boundingRect && !this._textBoundsFn) {
+      if (this.__boundingRect[includeTransform] !== null) {
+        return this.__boundingRect[includeTransform];
+      }
+
+      var rect;
+
+      if (typeof this._textBoundsFn === 'function') {
+        rect = this._textBoundsFn(this.attrs);
+      } else {
         return {
           x: 0,
           y: 0,
@@ -33358,11 +34181,7 @@ function (_DisplayObject) {
         };
       }
 
-      if (!this._boundingRect && this._textBoundsFn) {
-        this._boundingRect = this._textBoundsFn(this.attrs);
-      }
-
-      var p = rectToPoints(this._boundingRect);
+      var p = rectToPoints(rect);
       var pt = includeTransform && this.modelViewMatrix ? this.modelViewMatrix.transformPoints(p) : p;
 
       var _getMinMax = getMinMax(pt),
@@ -33372,19 +34191,25 @@ function (_DisplayObject) {
           xMax = _getMinMax2[2],
           yMax = _getMinMax2[3];
 
-      return {
+      this.__boundingRect[includeTransform] = {
         x: xMin,
         y: yMin,
         width: xMax - xMin,
         height: yMax - yMin
       };
+      return this.__boundingRect[includeTransform];
     }
   }, {
     key: "bounds",
     value: function bounds() {
       var includeTransform = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+      if (this.__bounds[includeTransform] !== null) {
+        return this.__bounds[includeTransform];
+      }
+
       var rect = this.boundingRect(includeTransform);
-      return [{
+      this.__bounds[includeTransform] = [{
         x: rect.x,
         y: rect.y
       }, {
@@ -33397,12 +34222,13 @@ function (_DisplayObject) {
         x: rect.x,
         y: rect.y + rect.height
       }];
+      return this.__bounds[includeTransform];
     }
   }]);
 
   return Text;
 }(DisplayObject);
-function create$k() {
+function create$l() {
   for (var _len = arguments.length, s = new Array(_len), _key = 0; _key < _len; _key++) {
     s[_key] = arguments[_key];
   }
@@ -33411,18 +34237,19 @@ function create$k() {
 }
 
 var reg$4 = registryFactory();
-reg$4.add('rect', create$g);
-reg$4.add('circle', create$h);
-reg$4.add('text', create$k);
-reg$4.add('line', create$i);
-reg$4.add('path', create$j);
+reg$4.add('rect', create$h);
+reg$4.add('circle', create$i);
+reg$4.add('text', create$l);
+reg$4.add('line', create$j);
+reg$4.add('path', create$k);
 reg$4.add('stage', create$e);
 reg$4.add('container', create$d);
-reg$4.add('defs', create$f);
+reg$4.add('defs', create$d);
 reg$4.add('linearGradient', create$f);
 reg$4.add('radialGradient', create$f);
 reg$4.add('stop', create$f);
-function create$l(type, input) {
+reg$4.add('pattern', create$g);
+function create$m(type, input) {
   // eslint-disable-line import/prefer-default-export
   return reg$4.get(type)(input);
 }
@@ -33530,7 +34357,7 @@ function traverse(items, parent, matrix, on) {
 
 
     state.node = styleContext.save(state.node);
-    var displayNode = create$l(state.node.type, state.node);
+    var displayNode = create$m(state.node.type, state.node);
 
     if (displayNode) {
       if (state.node.transform) {
@@ -33566,7 +34393,7 @@ function scene(_ref) {
       on = _ref$on === void 0 ? {} : _ref$on;
 
   if (!stage) {
-    stage = create$l('stage', dpi);
+    stage = create$m('stage', dpi);
   }
 
   traverse(items, stage, new Matrix(), on);
@@ -34268,12 +35095,12 @@ function textBounds(node) {
  * Get or create a gradient
  * @ignore
  * @param  {Object} g        Canvas 2d context
- * @param  {Object} shape    Current shape (for width/height properties)
+ * @param  {Object} node    Current node (for width/height properties)
  * @param  {Object} gradient The gradient properties
  * @return {Object}          A canvas compatible radial or linear gradient object
  */
 
-function createCanvasGradient(g, shape, gradient) {
+function createCanvasGradient(g, node, gradient) {
   var orientation = gradient.orientation,
       degree = gradient.degree,
       _gradient$stops = gradient.stops,
@@ -34281,23 +35108,14 @@ function createCanvasGradient(g, shape, gradient) {
   var newGradient = null;
 
   if (orientation === 'radial') {
-    var width = shape.width || 0;
-    var height = shape.height || 0;
-    var theX = shape.x !== undefined ? shape.x : shape.cx;
-    var theY = shape.y !== undefined ? shape.y : shape.cy;
-    newGradient = g.createRadialGradient(theX + width / 2, theY + height / 2, 1, theX + width / 2, theY + height / 2, shape.r || Math.max(shape.width, shape.height) / 2);
+    var bounds = node.boundingRect();
+    newGradient = g.createRadialGradient(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, 1e-5, bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, Math.max(bounds.width, bounds.height) / 2);
   } else {
     var points = degreesToPoints(degree);
 
-    var _width = shape.width || shape.r * 2;
+    var _bounds = node.boundingRect();
 
-    var _height = shape.height || shape.r * 2;
-
-    var _theX = shape.x !== undefined ? shape.x : shape.cx - shape.r;
-
-    var _theY = shape.y !== undefined ? shape.y : shape.cy - shape.r;
-
-    newGradient = g.createLinearGradient(_theX + points.x1 * _width, _theY + points.y1 * _height, _theX + points.x2 * _width, _theY + points.y2 * _height);
+    newGradient = g.createLinearGradient(_bounds.x + points.x1 * _bounds.width, _bounds.y + points.y1 * _bounds.height, _bounds.x + points.x2 * _bounds.width, _bounds.y + points.y2 * _bounds.height);
   }
 
   for (var i = 0, len = stops.length; i < len; i++) {
@@ -34306,6 +35124,47 @@ function createCanvasGradient(g, shape, gradient) {
   }
 
   return newGradient;
+}
+
+function getPattern(pattern, dummyCanvas, ctx) {
+  dummyCanvas.width = pattern.width;
+  dummyCanvas.height = pattern.height;
+  ctx.save();
+  ctx.fillStyle = pattern.fill;
+  pattern.shapes.forEach(function (s) {
+    switch (s.type) {
+      case 'rect':
+        ctx.rect(s.x, s.y, s.width, s.height);
+        break;
+
+      default:
+        break;
+    }
+  });
+  ctx.fill();
+  ctx.restore();
+  return ctx.createPattern(dummyCanvas, 'repeat');
+}
+
+function patternizer(document) {
+  var dummyCanvas = document.createElement('canvas');
+  var ctx = dummyCanvas.getContext('2d');
+  var cache = {};
+  return {
+    create: function create(pattern) {
+      var key = pattern.key;
+
+      if (key) {
+        cache[key] = cache[key] || getPattern(pattern, dummyCanvas, ctx);
+        return cache[key];
+      }
+
+      return getPattern(pattern, dummyCanvas, ctx);
+    },
+    clear: function clear() {
+      cache = {};
+    }
+  };
 }
 
 /**
@@ -34335,7 +35194,8 @@ function createRendererBox() {
       width = _ref.width,
       height = _ref.height,
       scaleRatio = _ref.scaleRatio,
-      margin = _ref.margin;
+      margin = _ref.margin,
+      edgeBleed = _ref.edgeBleed;
 
   var box = {
     x: 0,
@@ -34349,6 +35209,13 @@ function createRendererBox() {
     margin: {
       left: 0,
       top: 0
+    },
+    edgeBleed: {
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      bool: false
     }
   };
   box.x = isNaN(x) ? box.x : x;
@@ -34366,6 +35233,21 @@ function createRendererBox() {
     box.margin.top = isNaN(margin.top) ? 0 : margin.top;
   }
 
+  if (_typeof(edgeBleed) === 'object') {
+    ['left', 'right', 'top', 'bottom'].forEach(function (prop) {
+      if (!isNaN(edgeBleed[prop]) && edgeBleed[prop] > 0) {
+        box.edgeBleed[prop] = edgeBleed[prop];
+        box.edgeBleed.bool = true;
+      }
+    });
+  }
+
+  box.computedPhysical = {
+    x: Math.round(box.margin.left + (box.x - box.edgeBleed.left) * box.scaleRatio.x),
+    y: Math.round(box.margin.top + (box.y - box.edgeBleed.top) * box.scaleRatio.y),
+    width: Math.round((box.width + box.edgeBleed.left + box.edgeBleed.right) * box.scaleRatio.x),
+    height: Math.round((box.height + box.edgeBleed.top + box.edgeBleed.bottom) * box.scaleRatio.y)
+  };
   return box;
 }
 
@@ -34374,7 +35256,7 @@ function createRendererBox() {
  * @private
  */
 
-function create$m() {
+function create$n() {
   /**
   * @interface
   * @alias renderer
@@ -34464,7 +35346,10 @@ function create$m() {
      * @param {node--text-def} node
      * @return {rect} The bounding rectangle
      */
-    textBounds: textBounds
+    textBounds: textBounds,
+    setKey: function setKey(key) {
+      renderer.element().setAttribute('data-key', key);
+    }
   };
   return renderer;
 }
@@ -34538,19 +35423,23 @@ function applyContext(g, s, shapeToCanvasMap) {
   }
 }
 
-function renderShapes(shapes, g, shapeToCanvasMap) {
+function renderShapes(shapes, g, shapeToCanvasMap, deps) {
   for (var i = 0, len = shapes.length; i < len; i++) {
     var shape = shapes[i];
     var computed = {};
-    g.save(); // Gradient check
+    g.save();
 
     if (shape.attrs && (shape.attrs.fill || shape.attrs.stroke)) {
       if (shape.attrs.fill && _typeof(shape.attrs.fill) === 'object' && shape.attrs.fill.type === 'gradient') {
-        computed.fillStyle = createCanvasGradient(g, shape.attrs, shape.attrs.fill);
+        computed.fillStyle = createCanvasGradient(g, shape, shape.attrs.fill);
+      } else if (shape.attrs.fill && _typeof(shape.attrs.fill) === 'object' && shape.attrs.fill.type === 'pattern') {
+        computed.fillStyle = deps.patterns.create(shape.attrs.fill);
       }
 
       if (shape.attrs.stroke && _typeof(shape.attrs.stroke) === 'object' && shape.attrs.stroke.type === 'gradient') {
-        computed.strokeStyle = createCanvasGradient(g, shape.attrs, shape.attrs.stroke);
+        computed.strokeStyle = createCanvasGradient(g, shape, shape.attrs.stroke);
+      } else if (shape.attrs.stroke && _typeof(shape.attrs.stroke) === 'object' && shape.attrs.stroke.type === 'pattern') {
+        computed.strokeStyle = deps.patterns.create(shape.attrs.stroke);
       }
     }
 
@@ -34569,7 +35458,7 @@ function renderShapes(shapes, g, shapeToCanvasMap) {
     }
 
     if (shape.children) {
-      renderShapes(shape.children, g, shapeToCanvasMap);
+      renderShapes(shape.children, g, shapeToCanvasMap, deps);
     }
 
     g.restore();
@@ -34590,7 +35479,8 @@ function renderer() {
   var hasChangedRect = false;
   var rect = createRendererBox();
   var shapeToCanvasMap = [['fill', 'fillStyle'], ['stroke', 'strokeStyle'], ['opacity', 'globalAlpha'], ['globalAlpha', 'globalAlpha'], ['stroke-width', 'lineWidth'], ['stroke-linejoin', 'lineJoin'], ['stroke-dasharray', 'setLineDash', toLineDash]];
-  var canvasRenderer = create$m();
+  var patterns;
+  var canvasRenderer = create$n();
 
   canvasRenderer.element = function () {
     return el;
@@ -34618,27 +35508,32 @@ function renderer() {
       return false;
     }
 
+    if (!patterns) {
+      patterns = patternizer(el.ownerDocument);
+    }
+
     var g = el.getContext('2d');
     var dpiRatio = dpiScale(g);
     var scaleX = rect.scaleRatio.x;
     var scaleY = rect.scaleRatio.y;
 
     if (hasChangedRect) {
-      el.style.left = "".concat(Math.round(rect.margin.left + rect.x * scaleX), "px");
-      el.style.top = "".concat(Math.round(rect.margin.top + rect.y * scaleY), "px");
-      el.style.width = "".concat(Math.round(rect.width * scaleX), "px");
-      el.style.height = "".concat(Math.round(rect.height * scaleY), "px");
-      el.width = Math.round(rect.width * dpiRatio * scaleX);
-      el.height = Math.round(rect.height * dpiRatio * scaleY);
+      el.style.left = "".concat(rect.computedPhysical.x, "px");
+      el.style.top = "".concat(rect.computedPhysical.y, "px");
+      el.style.width = "".concat(rect.computedPhysical.width, "px");
+      el.style.height = "".concat(rect.computedPhysical.height, "px");
+      el.width = Math.round(rect.computedPhysical.width * dpiRatio);
+      el.height = Math.round(rect.computedPhysical.height * dpiRatio);
     }
 
     var sceneContainer = {
       type: 'container',
-      children: shapes
+      children: shapes,
+      transform: rect.edgeBleed.bool ? "translate(".concat(rect.edgeBleed.left * dpiRatio * scaleX, ", ").concat(rect.edgeBleed.top * dpiRatio * scaleY, ")") : ''
     };
 
     if (dpiRatio !== 1 || scaleX !== 1 || scaleY !== 1) {
-      sceneContainer.transform = "scale(".concat(dpiRatio * scaleX, ", ").concat(dpiRatio * scaleY, ")");
+      sceneContainer.transform += "scale(".concat(dpiRatio * scaleX, ", ").concat(dpiRatio * scaleY, ")");
     }
 
     var newScene = sceneFn({
@@ -34649,11 +35544,14 @@ function renderer() {
       }
     });
     var hasChangedScene = scene$$1 ? !newScene.equals(scene$$1) : true;
+    patterns.clear();
     var doRender = hasChangedRect || hasChangedScene;
 
     if (doRender) {
       canvasRenderer.clear();
-      renderShapes(newScene.children, g, shapeToCanvasMap);
+      renderShapes(newScene.children, g, shapeToCanvasMap, {
+        patterns: patterns
+      });
     }
 
     hasChangedRect = false;
@@ -35027,7 +35925,11 @@ var destroyer = function destroyer(el) {
 
 var maintainer = function maintainer(element, item) {
   for (var attr in item.attrs) {
-    if (attr === 'text') {
+    if (attr === 'stroke' && item.strokeReference) {
+      element.setAttribute('stroke', item.strokeReference);
+    } else if (attr === 'fill' && item.fillReference) {
+      element.setAttribute('fill', item.fillReference);
+    } else if (attr === 'text') {
       element.setAttribute('style', 'white-space: pre');
       element.textContent = ellipsText(item.attrs, measureText);
       var dir = detectTextDirection(item.attrs.text);
@@ -35167,98 +36069,132 @@ function hashObject(item) {
   return hash;
 }
 
-var gradients = [];
-var gradientHashMap = {};
-/**
- * If this attr (fill or stroke) has a gradient, apply it.
- * @ignore
- * @param  {Object} item Item with item[attr]
- * @param  {String} attr The attribute to search for gradient (fill or stroke)
- * @param  {String} url  URL for handling base href
- */
+function gradienter(bucket) {
+  var hasher = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : hashObject;
+  var cache = {};
+  var uid = Date.now();
+  var p = {
+    getOrCreateGradient: function getOrCreateGradient() {
+      var item = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      var attr = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'fill';
+      var url = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
+      var gradientHash = hasher(item[attr]);
+      var gradientId = "picasso-gradient-".concat(uid, "-").concat(gradientHash);
 
-function checkGradient() {
-  var item = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  var attr = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'fill';
-  var url = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
-  var gradientHash = hashObject(item[attr]);
-  var gradientId = '';
+      if (!cache[gradientHash]) {
+        var _item$attr = item[attr],
+            orientation = _item$attr.orientation,
+            degree = _item$attr.degree,
+            _item$attr$stops = _item$attr.stops,
+            stops = _item$attr$stops === void 0 ? [] : _item$attr$stops;
+        var gradient = {};
 
-  if (gradientHashMap[gradientHash] !== undefined) {
-    gradientId = gradientHashMap[gradientHash];
-  } else {
-    var _item$attr = item[attr],
-        orientation = _item$attr.orientation,
-        degree = _item$attr.degree,
-        _item$attr$stops = _item$attr.stops,
-        stops = _item$attr$stops === void 0 ? [] : _item$attr$stops;
-    var gradient = {};
-
-    if (degree === undefined) {
-      degree = 90;
-    } // Default to linear
+        if (degree === undefined) {
+          degree = 90;
+        } // Default to linear
 
 
-    if (orientation === 'radial') {
-      gradient.type = 'radialGradient';
-    } else {
-      gradient = degreesToPoints(degree);
-      gradient.type = 'linearGradient';
-    }
+        if (orientation === 'radial') {
+          gradient.type = 'radialGradient';
+        } else {
+          gradient = degreesToPoints(degree);
+          gradient.type = 'linearGradient';
+        }
 
-    gradient.id = "picasso-gradient-".concat(gradientHash);
-    gradient.children = stops.map(function (_ref) {
-      var offset = _ref.offset,
-          color = _ref.color,
-          opacity = _ref.opacity;
-      return {
-        type: 'stop',
-        offset: "".concat(offset * 100, "%"),
-        style: "stop-color:".concat(color, ";stop-opacity:").concat(opacity || 1)
-      };
-    });
-    gradients.push(gradient);
-    gradientHashMap[gradientHash] = gradient.id;
-    gradientId = gradient.id;
-  }
+        gradient.id = gradientId;
+        gradient.children = stops.map(function (_ref) {
+          var offset = _ref.offset,
+              color = _ref.color,
+              opacity = _ref.opacity;
+          return {
+            type: 'stop',
+            offset: "".concat(offset * 100, "%"),
+            style: "stop-color:".concat(color, ";stop-opacity:").concat(typeof opacity !== 'undefined' ? opacity : 1)
+          };
+        });
+        bucket.push(gradient);
+        cache[gradientHash] = gradientId;
+      }
 
-  return "url('".concat(url, "#").concat(gradientId, "')");
-}
-/**
- * Reset the gradients between rendering
- * @ignore
- */
+      return "url('".concat(url, "#").concat(gradientId, "')");
+    },
+    onCreate: function onCreate(state) {
+      var url = '';
 
+      if (typeof window !== 'undefined') {
+        url = window.location.href.split('#')[0];
+      }
 
-function resetGradients() {
-  gradients = [];
-  gradientHashMap = {};
-}
-function onGradient(state) {
-  var url = '';
+      var item = state.node;
 
-  if (typeof window !== 'undefined') {
-    url = window.location.href.split('#')[0];
-  }
+      if (item.fill && _typeof(item.fill) === 'object' && item.fill.type === 'gradient') {
+        item.fillReference = p.getOrCreateGradient(item, 'fill', url);
+      }
 
-  var item = state.node;
-
-  if (item.fill && _typeof(item.fill) === 'object' && item.fill.type === 'gradient') {
-    item.fill = checkGradient(item, 'fill', url);
-  }
-
-  if (item.stroke && _typeof(item.stroke) === 'object' && item.stroke.type === 'gradient') {
-    item.stroke = checkGradient(item, 'stroke', url);
-  }
-}
-function createDefsNode() {
-  return {
-    type: 'defs',
-    children: gradients,
-    disabled: function disabled() {
-      return gradients.length === 0;
+      if (item.stroke && _typeof(item.stroke) === 'object' && item.stroke.type === 'gradient') {
+        item.strokeReference = p.getOrCreateGradient(item, 'stroke', url);
+      }
+    },
+    clear: function clear() {
+      cache = {};
     }
   };
+  return p;
+}
+
+function patternizer$1(bucket) {
+  var hasher = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : hashObject;
+  var cache = {};
+  var uid = Date.now();
+  var p = {
+    onCreate: function onCreate(state) {
+      var inputs = {};
+
+      if (state.node && _typeof(state.node.fill) === 'object' && state.node.fill.type === 'pattern' && state.node.fill.shapes) {
+        inputs.fill = state.node.fill;
+      }
+
+      if (state.node && _typeof(state.node.stroke) === 'object' && state.node.stroke.type === 'pattern' && state.node.stroke.shapes) {
+        inputs.stroke = state.node.stroke;
+      }
+
+      Object.keys(inputs).forEach(function (key) {
+        var url = '';
+        var input = inputs[key];
+        var patternHash = hasher(input);
+        var pnid = "picasso-pattern-".concat(uid, "-").concat(patternHash);
+
+        if (typeof window !== 'undefined') {
+          url = window.location.href.split('#')[0];
+        }
+
+        if (!cache[patternHash]) {
+          var pn = {
+            patternUnits: 'userSpaceOnUse',
+            x: 0,
+            y: 0,
+            width: input.width,
+            height: input.height,
+            type: 'pattern',
+            id: pnid,
+            children: [],
+            fill: input.fill
+          };
+          input.shapes.forEach(function (s) {
+            pn.children.push(s);
+          });
+          bucket.push(pn);
+          cache[patternHash] = true;
+        }
+
+        state.node["".concat(key, "Reference")] = "url('".concat(url, "#").concat(pnid, "')");
+      });
+    },
+    clear: function clear() {
+      cache = {};
+    }
+  };
+  return p;
 }
 
 /**
@@ -35280,7 +36216,13 @@ function renderer$1() {
   var hasChangedRect = false;
   var rect = createRendererBox();
   var scene$$1;
-  var svg = create$m();
+  var svg = create$n();
+  var defs = {
+    type: 'defs',
+    children: []
+  };
+  var patterns = patternizer$1(defs.children);
+  var gradients = gradienter(defs.children);
 
   svg.element = function () {
     return el;
@@ -35316,26 +36258,32 @@ function renderer$1() {
     var scaleY = rect.scaleRatio.y;
 
     if (hasChangedRect) {
-      el.style.left = "".concat(Math.round(rect.margin.left + rect.x * scaleX), "px");
-      el.style.top = "".concat(Math.round(rect.margin.top + rect.y * scaleY), "px");
-      el.setAttribute('width', Math.round(rect.width * scaleX));
-      el.setAttribute('height', Math.round(rect.height * scaleY));
+      el.style.left = "".concat(rect.computedPhysical.x, "px");
+      el.style.top = "".concat(rect.computedPhysical.y, "px");
+      el.setAttribute('width', rect.computedPhysical.width);
+      el.setAttribute('height', rect.computedPhysical.height);
     }
 
-    resetGradients();
+    gradients.clear();
+    patterns.clear();
+    defs.children.length = 0;
     var sceneContainer = {
       type: 'container',
-      children: Array.isArray(nodes) ? _toConsumableArray$1(nodes).concat([createDefsNode()]) : nodes
+      children: Array.isArray(nodes) ? _toConsumableArray$1(nodes).concat([defs]) : nodes,
+      transform: rect.edgeBleed.bool ? "translate(".concat(rect.edgeBleed.left * scaleX, ", ").concat(rect.edgeBleed.top * scaleY, ")") : ''
     };
 
     if (scaleX !== 1 || scaleY !== 1) {
-      sceneContainer.transform = "scale(".concat(scaleX, ", ").concat(scaleY, ")");
+      sceneContainer.transform += "scale(".concat(scaleX, ", ").concat(scaleY, ")");
     }
 
     var newScene = sceneFn({
       items: [sceneContainer],
       on: {
-        create: [onGradient, onLineBreak(svg.measureText), injectTextBoundsFn(svg)]
+        create: [function (state) {
+          state.node.fillReference = undefined;
+          state.node.strokeReference = undefined;
+        }, gradients.onCreate, patterns.onCreate, onLineBreak(svg.measureText), injectTextBoundsFn(svg)]
       }
     });
     var hasChangedScene = scene$$1 ? !newScene.equals(scene$$1) : true;
@@ -36104,7 +37052,7 @@ function renderer$2() {
   var el;
   var rect = createRendererBox();
   var dNode;
-  var dom = create$m();
+  var dom = create$n();
 
   dom.element = function () {
     return el;
@@ -36132,12 +37080,10 @@ function renderer$2() {
       return false;
     }
 
-    var scaleX = rect.scaleRatio.x;
-    var scaleY = rect.scaleRatio.y;
-    el.style.left = "".concat(Math.round(rect.margin.left + rect.x * scaleX), "px");
-    el.style.top = "".concat(Math.round(rect.margin.left + rect.y * scaleY), "px");
-    el.style.width = "".concat(Math.round(rect.width * scaleX), "px");
-    el.style.height = "".concat(Math.round(rect.height * scaleY), "px");
+    el.style.left = "".concat(rect.computedPhysical.x, "px");
+    el.style.top = "".concat(rect.computedPhysical.y, "px");
+    el.style.width = "".concat(rect.computedPhysical.width, "px");
+    el.style.height = "".concat(rect.computedPhysical.height, "px");
     var vNode;
 
     if (Array.isArray(nodes)) {
@@ -36620,7 +37566,7 @@ scales.forEach(p.use);
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-Object.defineProperty(exports,'__esModule',{value:!0});exports.enableSelectionOnFirstDimension=exports.mouseEventToRangeEvent=exports.interactionsSetup=void 0;var _picassoPluginQ=__webpack_require__(0),_picassoPluginQ2=_interopRequireDefault(_picassoPluginQ);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}var interactionsSetup=function(){'use strict';var a='rangex';return[{type:'native',events:{mousedown:function d(b){var c=this.chart.componentsFromPoint({x:b.clientX,y:b.clientY})[0];a=c&&~['left','right'].indexOf(c.dock)?'rangey':'rangex';if('undefined'!=typeof this.chart.component(a)){this.chart.component(a).emit('rangeStart',mouseEventToRangeEvent(b))}},mousemove:function c(b){if('undefined'!=typeof this.chart.component(a)){this.chart.component(a).emit('rangeMove',mouseEventToRangeEvent(b))}},mouseup:function c(b){if('undefined'!=typeof this.chart.component(a)){this.chart.component(a).emit('rangeEnd',mouseEventToRangeEvent(b))}}}}]},mouseEventToRangeEvent=function(a){return{center:{x:a.clientX,y:a.clientY},deltaX:a.movementX,deltaY:a.movementY}},enableSelectionOnFirstDimension=function(a,b,c){var d=b.brush(c);d.on('start',function(){});d.on('update',function(b){var c=_picassoPluginQ2.default.selections(d)[0];if('resetMadeSelections'===c.method){d.end();a.backendApi.clearSelections()}else if('selectHyperCubeValues'===c.method){if(0<b[0].values.filter(function(a){return-2<a}).length){var e=c.params[2].filter(function(a){return-2<a});a.selectValues(c.params[1],e,!1)}}else if('rangeSelectHyperCubeValues'===c.method){if(d.isActive){a.backendApi.selectRange(c.params[1],!0)}}});return d};exports.interactionsSetup=interactionsSetup;exports.mouseEventToRangeEvent=mouseEventToRangeEvent;exports.enableSelectionOnFirstDimension=enableSelectionOnFirstDimension;
+Object.defineProperty(exports,'__esModule',{value:!0});exports.enableSelectionOnFirstDimension=exports.mouseEventToRangeEvent=exports.interactionsSetup=void 0;var _picassoPluginQ=__webpack_require__(0),_picassoPluginQ2=_interopRequireDefault(_picassoPluginQ);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}var interactionsSetup=function(){'use strict';var a='rangex';return[{type:'native',events:{mousedown:function d(b){var c=this.chart.componentsFromPoint({x:b.clientX,y:b.clientY})[0];a=c&&~['left','right'].indexOf(c.dock)?'rangey':'rangex';if('undefined'!=typeof this.chart.component(a)){this.chart.component(a).emit('rangeStart',mouseEventToRangeEvent(b))}},mousemove:function c(b){if('undefined'!=typeof this.chart.component(a)){this.chart.component(a).emit('rangeMove',mouseEventToRangeEvent(b))}},mouseup:function c(b){if('undefined'!=typeof this.chart.component(a)){this.chart.component(a).emit('rangeEnd',mouseEventToRangeEvent(b))}}}}]},mouseEventToRangeEvent=function(a){return{center:{x:a.clientX,y:a.clientY},deltaX:a.movementX,deltaY:a.movementY}},enableSelectionOnFirstDimension=function(a,b,c){var d=b.brush(c);d.on('start',function(){});d.on('update',function(b,c){var e=_picassoPluginQ2.default.selections(d)[0];if('resetMadeSelections'===e.method){d.end();a.backendApi.clearSelections()}else if('selectHyperCubeValues'===e.method){var f=[],g=[];if(0<b.length)f=b[0].values.filter(function(a){return-2<a});if(0<c.length)g=c[0].values.filter(function(a){return-2<a});var h=f.concat(g);a.selectValues(e.params[1],h,!0)}else if('rangeSelectHyperCubeValues'===e.method){if(d.isActive){a.backendApi.selectRange(e.params[1],!0)}}});return d};exports.interactionsSetup=interactionsSetup;exports.mouseEventToRangeEvent=mouseEventToRangeEvent;exports.enableSelectionOnFirstDimension=enableSelectionOnFirstDimension;
 
 /***/ }),
 /* 4 */
