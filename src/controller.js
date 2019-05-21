@@ -50,6 +50,7 @@ export default ['$scope', '$element', function($scope, $element) {
 
     if (dataUpdate) {
       let hq = ConvertHypercube.convertHypercube($scope.layout.qHyperCube);
+      console.log($scope.layout.qHyperCube);
       up.data = [{
         type: 'q',
         key: 'qHyperCube',

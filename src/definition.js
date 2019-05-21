@@ -287,7 +287,7 @@ let about = {
     about1a: {
       type: "string",
       component: "text",
-      label: "v1.1.0"
+      label: "v1.1.2"
     },
     about2: {
       type: "string",
@@ -335,10 +335,9 @@ export default {
               },
               type: "string",
               label: "Variance Formula",
+              component: "expression",
               ref: "qAttributeExpressions.0.qExpression",
-              expression: "always",
               defaultValue: (a, b) => {
-                console.log(b);
                 return "num(Column(2) - Column(1),'#,##0.00')"
               }
             }
