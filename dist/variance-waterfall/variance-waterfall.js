@@ -38295,7 +38295,7 @@ scales.forEach(p.use);
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-Object.defineProperty(exports,'__esModule',{value:!0});exports.enableSelectionOnFirstDimension=exports.mouseEventToRangeEvent=exports.interactionsSetup=void 0;var _picassoPluginQ=__webpack_require__(0),_picassoPluginQ2=_interopRequireDefault(_picassoPluginQ);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}var interactionsSetup=function(){'use strict';var a='rangex';return[{type:'native',events:{mousedown:function d(b){var c=this.chart.componentsFromPoint({x:b.clientX,y:b.clientY})[0];a=c&&~['left','right'].indexOf(c.dock)?'rangey':'rangex';if('undefined'!=typeof this.chart.component(a)){this.chart.component(a).emit('rangeStart',mouseEventToRangeEvent(b))}},mousemove:function c(b){if('undefined'!=typeof this.chart.component(a)){this.chart.component(a).emit('rangeMove',mouseEventToRangeEvent(b))}},mouseup:function c(b){if('undefined'!=typeof this.chart.component(a)){this.chart.component(a).emit('rangeEnd',mouseEventToRangeEvent(b))}}}}]},mouseEventToRangeEvent=function(a){return{center:{x:a.clientX,y:a.clientY},deltaX:a.movementX,deltaY:a.movementY}},enableSelectionOnFirstDimension=function(a,b,c){var d=b.brush(c);d.on('start',function(){});d.on('update',function(b,c){var e=_picassoPluginQ2.default.selections(d)[0];if('resetMadeSelections'===e.method){d.end();a.backendApi.clearSelections()}else if('selectHyperCubeValues'===e.method){var f=[],g=[];if(0<b.length)f=b[0].values.filter(function(a){return-2<a});if(0<c.length)g=c[0].values.filter(function(a){return-2<a});var h=f.concat(g);a.selectValues(e.params[1],h,!0)}else if('rangeSelectHyperCubeValues'===e.method){if(d.isActive){a.backendApi.selectRange(e.params[1],!0)}}});return d};exports.interactionsSetup=interactionsSetup;exports.mouseEventToRangeEvent=mouseEventToRangeEvent;exports.enableSelectionOnFirstDimension=enableSelectionOnFirstDimension;
+Object.defineProperty(exports,'__esModule',{value:!0});exports.enableSelectionOnFirstDimension=exports.interactionsSetup=void 0;var _picassoPluginQ=__webpack_require__(0),_picassoPluginQ2=_interopRequireDefault(_picassoPluginQ);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}var interactionsSetup=function(){'use strict';var a='rangex',b=[{type:'hammer',gestures:[{type:'Pan',options:{event:'range',dirction:Hammer.DIRECTION_HORIZONTAL},events:{rangestart:function c(b){if('undefined'!=typeof this.chart.component(a)){this.chart.component(a).emit('rangeStart',b)}},rangemove:function c(b){if('undefined'!=typeof this.chart.component(a)){this.chart.component(a).emit('rangeMove',b)}},rangeend:function c(b){if('undefined'!=typeof this.chart.component(a)){this.chart.component(a).emit('rangeEnd',b)}}}}]}];return b},enableSelectionOnFirstDimension=function(a,b,c){var d=b.brush(c);d.on('start',function(){});d.on('update',function(b,c){var e=_picassoPluginQ2.default.selections(d)[0];if('resetMadeSelections'===e.method){d.end();a.backendApi.clearSelections()}else if('selectHyperCubeValues'===e.method){var f=[],g=[];if(0<b.length)f=b[0].values.filter(function(a){return-2<a});if(0<c.length)g=c[0].values.filter(function(a){return-2<a});var h=f.concat(g);a.selectValues(e.params[1],h,!0)}else if('rangeSelectHyperCubeValues'===e.method){if(d.isActive){a.backendApi.selectRange(e.params[1],!0)}}});return d};exports.interactionsSetup=interactionsSetup;exports.enableSelectionOnFirstDimension=enableSelectionOnFirstDimension;
 
 /***/ }),
 /* 4 */
@@ -38309,7 +38309,7 @@ module.exports = __webpack_require__(5);
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-Object.defineProperty(exports,"__esModule",{value:!0});var _initialProperties=__webpack_require__(6),_initialProperties2=_interopRequireDefault(_initialProperties),_template=__webpack_require__(7),_template2=_interopRequireDefault(_template),_definition=__webpack_require__(8),_definition2=_interopRequireDefault(_definition),_controller=__webpack_require__(9),_controller2=_interopRequireDefault(_controller),_paint=__webpack_require__(13),_paint2=_interopRequireDefault(_paint),_resize=__webpack_require__(14),_resize2=_interopRequireDefault(_resize),_support=__webpack_require__(15),_support2=_interopRequireDefault(_support);__webpack_require__(16);var _picasso=__webpack_require__(2),_picasso2=_interopRequireDefault(_picasso),_picassoPluginQ=__webpack_require__(0),_picassoPluginQ2=_interopRequireDefault(_picassoPluginQ);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}exports.default=window.define([],function(){return{initialProperties:_initialProperties2.default,template:_template2.default,support:_support2.default,definition:_definition2.default,controller:_controller2.default,paint:_paint2.default,resize:_resize2.default}});
+Object.defineProperty(exports,"__esModule",{value:!0});var _initialProperties=__webpack_require__(6),_initialProperties2=_interopRequireDefault(_initialProperties),_template=__webpack_require__(7),_template2=_interopRequireDefault(_template),_definition=__webpack_require__(8),_definition2=_interopRequireDefault(_definition),_controller=__webpack_require__(9),_controller2=_interopRequireDefault(_controller),_paint=__webpack_require__(14),_paint2=_interopRequireDefault(_paint),_resize=__webpack_require__(15),_resize2=_interopRequireDefault(_resize),_support=__webpack_require__(16),_support2=_interopRequireDefault(_support);__webpack_require__(17);var _picasso=__webpack_require__(2),_picasso2=_interopRequireDefault(_picasso),_picassoPluginQ=__webpack_require__(0),_picassoPluginQ2=_interopRequireDefault(_picassoPluginQ);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}exports.default=window.define([],function(){return{initialProperties:_initialProperties2.default,template:_template2.default,support:_support2.default,definition:_definition2.default,controller:_controller2.default,paint:_paint2.default,resize:_resize2.default}});
 
 /***/ }),
 /* 6 */
@@ -38336,7 +38336,7 @@ Object.defineProperty(exports,"__esModule",{value:!0});var colorsAndLegend={tran
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-Object.defineProperty(exports,'__esModule',{value:!0});var _converthypercube=__webpack_require__(10),_converthypercube2=_interopRequireDefault(_converthypercube),_picasso=__webpack_require__(2),_picasso2=_interopRequireDefault(_picasso),_picassoPluginQ=__webpack_require__(0),_picassoPluginQ2=_interopRequireDefault(_picassoPluginQ),_bridgepicassospec=__webpack_require__(12),_bridgepicassospec2=_interopRequireDefault(_bridgepicassospec),_theme=__webpack_require__(1),_theme2=_interopRequireDefault(_theme),_interactions=__webpack_require__(3);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}function _asyncToGenerator(a){return function(){var b=a.apply(this,arguments);return new Promise(function(a,c){function d(e,f){try{var g=b[e](f),h=g.value}catch(a){c(a);return}if(g.done){a(h)}else{return Promise.resolve(h).then(function(a){d('next',a)},function(a){d('throw',a)})}}return d('next')})}}var qlik=window.require('qlik');exports.default=['$scope','$element',function(a,b){a.qlik=qlik;a.theme=null;a.updated=!1;a.app=qlik.currApp(this);_picasso2.default.use(_picassoPluginQ2.default);a.pic=(0,_picasso2.default)({renderer:{prio:['canvas']},logger:{// experimental
+Object.defineProperty(exports,'__esModule',{value:!0});var _converthypercube=__webpack_require__(10),_converthypercube2=_interopRequireDefault(_converthypercube),_picasso=__webpack_require__(2),_picasso2=_interopRequireDefault(_picasso),_picassoPluginQ=__webpack_require__(0),_picassoPluginQ2=_interopRequireDefault(_picassoPluginQ),_picassoPluginHammer=__webpack_require__(12),_picassoPluginHammer2=_interopRequireDefault(_picassoPluginHammer),_bridgepicassospec=__webpack_require__(13),_bridgepicassospec2=_interopRequireDefault(_bridgepicassospec),_theme=__webpack_require__(1),_theme2=_interopRequireDefault(_theme),_interactions=__webpack_require__(3);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}function _asyncToGenerator(a){return function(){var b=a.apply(this,arguments);return new Promise(function(a,c){function d(e,f){try{var g=b[e](f),h=g.value}catch(a){c(a);return}if(g.done){a(h)}else{return Promise.resolve(h).then(function(a){d('next',a)},function(a){d('throw',a)})}}return d('next')})}}var qlik=window.require('qlik');exports.default=['$scope','$element',function(a,b){a.qlik=qlik;a.theme=null;a.updated=!1;a.app=qlik.currApp(this);_picasso2.default.use(_picassoPluginQ2.default);_picasso2.default.use(_picassoPluginHammer2.default);a.pic=(0,_picasso2.default)({renderer:{prio:['canvas']},logger:{// experimental
 level:4},style:_theme2.default.getPicassoTheme()});a.chart=a.pic.chart({element:b.find('.lrp')[0],updated:function b(){a.updated=!0},beforeUpdated:function b(){a.updated=!1}});a.chartBrush=(0,_interactions.enableSelectionOnFirstDimension)(a,a.chart,'highlight',a.layout);a.updatedData=function(){var b=_asyncToGenerator(/*#__PURE__*/regeneratorRuntime.mark(function b(c,d,e){var f,g;return regeneratorRuntime.wrap(function(b){while(1){switch(b.prev=b.next){case 0:f={};if(e){g=_converthypercube2.default.convertHypercube(a.layout.qHyperCube);f.data=[{type:'q',key:'qHyperCube',data:g}]}if('edit'===d||'undefined'==typeof a.chart.settings){f.settings=(0,_bridgepicassospec2.default)(c,a.$parent.options.direction)}a.chart.update(f);case 5:case'end':return b.stop();}}},b,this)}));return function(){return b.apply(this,arguments)}}()}];
 
 /***/ }),
@@ -38377,6 +38377,220 @@ module.exports = g;
 
 /***/ }),
 /* 12 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/*
+* picasso-plugin-hammer v0.25.3
+* Copyright (c) 2019 QlikTech International AB
+* Released under the MIT license.
+*/
+
+
+/* global Hammer */
+var translateKnownTypes = {
+  click: 'Tap',
+  Click: 'Tap',
+  tap: 'Tap',
+  pan: 'Pan',
+  swipe: 'Swipe',
+  rotate: 'Rotate',
+  press: 'Press',
+  pinch: 'Pinch'
+};
+/**
+ * Helper function for translating typical non-hammer gesture to a hammer gesture. Currently only supporting 'click'
+ * @param {String} type Gesture type
+ * @private
+ */
+
+function getGestureType(type) {
+  return translateKnownTypes[type] || type;
+}
+/**
+ * Manages event handlers for HammerJS. Assumes Hammer is loaded and added to the global namespace
+ */
+
+
+function hammer(chart, mediator, element) {
+  var settings;
+  var instance;
+  var mc;
+  var key;
+  var hammerGestures = [];
+  var isOn = true;
+  /**
+   * Set default settings
+   * @private
+   */
+
+  function setDefaultSettings(newSettings) {
+    key = newSettings.key; //eslint-disable-line
+
+    settings = newSettings;
+    instance = {
+      chart: chart,
+      mediator: mediator,
+      settings: settings
+    };
+    settings.gestures = settings.gestures || [];
+
+    if (settings.enable === undefined) {
+      settings.enable = true;
+    }
+  }
+  /**
+   * @private
+   * add hammer recognizers based on settings
+   */
+
+
+  function addRecognizers() {
+    if (typeof settings.enable === 'function') {
+      settings.enable = settings.enable.bind(instance)();
+    }
+
+    if (!settings.enable) {
+      return; // interaction is disabled
+    }
+
+    settings.gestures.forEach(function (gesture) {
+      gesture.options = gesture.options || {}; // handle action enable
+
+      if (gesture.options.enable === undefined) {
+        gesture.options.enable = true;
+      }
+
+      if (typeof gesture.options.enable === 'function') {
+        gesture.options.enable = gesture.options.enable.bind(instance);
+      } // setup hammer gestures
+
+
+      var type = getGestureType(gesture.type);
+
+      if (Hammer && Hammer[type]) {
+        gesture.options.event = gesture.options.event || gesture.type.toLowerCase();
+        mc = mc || new Hammer.Manager(element);
+        mc.add(new Hammer[type](gesture.options));
+        Object.keys(gesture.events).forEach(function (eventName) {
+          gesture.events[eventName] = gesture.events[eventName].bind(instance);
+          mc.on(eventName, gesture.events[eventName]);
+        });
+        hammerGestures.push(gesture);
+      }
+    }); // setup mixing hammer gestures
+
+    settings.gestures.forEach(function (gesture) {
+      var type = getGestureType(gesture.type);
+
+      if (Hammer && Hammer[type]) {
+        if (gesture.recognizeWith) {
+          mc.get(gesture.options.event).recognizeWith(gesture.recognizeWith.split(' ').filter(function (e) {
+            return e !== '';
+          }));
+        }
+
+        if (gesture.requireFailure) {
+          mc.get(gesture.options.event).requireFailure(gesture.requireFailure.split(' ').filter(function (e) {
+            return e !== '';
+          }));
+        }
+      }
+    });
+  }
+  /**
+   * @private
+   * removes all added hammer recognizers and native events
+   */
+
+
+  function removeAddedEvents() {
+    // remove hammer recognizers and registered events
+    hammerGestures.forEach(function (gesture) {
+      Object.keys(gesture.events).forEach(function (eventName) {
+        mc.off(eventName, gesture.events[eventName]);
+      });
+      mc.remove(gesture.options.event);
+    });
+    hammerGestures = [];
+  }
+
+  return {
+    /**
+     * Getter for the key.
+     */
+    get key() {
+      return key;
+    },
+
+    /**
+     * Updates this with new settings
+     * @typedef settings
+     * @type {object}
+     * @property {string} [type] - The interaction type. Is 'hammer' for this component
+     * @property {boolean|function} [enable] - Should the interaction be enabled or not.
+     * This is only run when adding event handlers. In effect at startup, update or during on/off.
+     * It does not run during every event loop.
+     * @property {object} [events] - The keys in this object is the names of native events
+     * that should be added to the chart element and they should all point to function which
+     * will be the corresponding event handler.
+     */
+    set: function set(newSettings) {
+      setDefaultSettings(newSettings);
+      removeAddedEvents();
+
+      if (isOn) {
+        addRecognizers();
+      }
+    },
+
+    /**
+     * Turns off interactions
+     */
+    off: function off() {
+      isOn = false;
+      removeAddedEvents();
+    },
+
+    /**
+     * Turns off interactions
+     */
+    on: function on() {
+      isOn = true;
+
+      if (hammerGestures.length === 0) {
+        addRecognizers();
+      }
+    },
+
+    /**
+     * Destroys and unbinds all event handlers
+     */
+    destroy: function destroy() {
+      removeAddedEvents();
+
+      if (mc) {
+        mc.destroy();
+      }
+
+      mc = null;
+      instance = null;
+      settings = null;
+    }
+  };
+}
+
+function initialize(picasso) {
+  picasso.interaction('hammer', hammer);
+}
+
+/* harmony default export */ __webpack_exports__["default"] = (initialize);
+//# sourceMappingURL=picasso-hammer.esm.js.map
+
+
+/***/ }),
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -38413,34 +38627,34 @@ size:12// Optional
 }}},{key:'rangex',layout:{displayOrder:5},type:'brush-range',settings:{brush:'highlight',direction:'horizontal',scale:'t',target:{component:'xaxis'},bubbles:{align:'start'}}}]}};var _theme=__webpack_require__(1),_theme2=_interopRequireDefault(_theme),_interactions=__webpack_require__(3);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(exports,'__esModule',{value:!0});exports.default=function(a,b){var c=this;var d=this.$scope.qlik.currApp(this);d.theme.getApplied().then(function(a){c.$scope.theme=a;_theme2.default.setAppTheme(c.$scope.theme);var d=c.$scope.qlik.navigation.getMode();c.$scope.updatedData(b,d,!0);return c.$scope.qlik.Promise.resolve()})};var _theme=__webpack_require__(1),_theme2=_interopRequireDefault(_theme);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(exports,"__esModule",{value:!0});exports.default=function(a,b){var c=this,d=c.$scope.viz,e=this.$scope.qlik.navigation.getMode();this.$scope.updatedData(b,e,!1);return this.$scope.qlik.Promise.resolve()};
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(exports,"__esModule",{value:!0});exports.default={snapshot:!0,export:!0,exportData:!0,viewData:!0};
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(17);
+var content = __webpack_require__(18);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -38448,7 +38662,7 @@ var transform;
 var options = {"hmr":true}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(19)(content, options);
+var update = __webpack_require__(20)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
@@ -38465,10 +38679,10 @@ if(false) {
 }
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(18)(false);
+exports = module.exports = __webpack_require__(19)(false);
 // imports
 
 
@@ -38479,7 +38693,7 @@ exports.push([module.i, "", ""]);
 
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports) {
 
 /*
@@ -38561,7 +38775,7 @@ function toComment(sourceMap) {
 
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -38617,7 +38831,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(20);
+var	fixUrls = __webpack_require__(21);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -38933,7 +39147,7 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports) {
 
 
