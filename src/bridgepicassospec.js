@@ -101,6 +101,14 @@ export default function(layout, direction) {
           dock: layout.dimensionAxis.dock === 'near' ? 'bottom' : 'top',
           displayOrder: 0
         },
+        brush: {
+          trigger: [{
+            on: 'tap',
+            contexts: ['highlight'],
+            globalPropagation: 'stop',
+            propagation: 'stop'
+          }]
+        },
         settings: {
           labels: {
             show: (layout.dimensionAxis.show != 'none' && layout.dimensionAxis.show != 'title'),
