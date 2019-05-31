@@ -47,7 +47,7 @@ export default ['$scope', '$element', function($scope, $element) {
   $scope.chartBrush = enableSelectionOnFirstDimension($scope, $scope.chart, 'highlight', $scope.layout);
 
 
-  $scope.updatedData = async function(layout, mode, dataUpdate) {
+  $scope.updatedData = function(layout, mode, dataUpdate) {
     let up = {};
 
     if (dataUpdate) {

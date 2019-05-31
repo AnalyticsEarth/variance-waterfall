@@ -245,7 +245,6 @@ export default function(layout, direction) {
             ref: 'mm'
           },
           opacity: function(d) {
-            //console.log(d);
             if (d.datum.value === d.data.items[d.data.items.length - 1].value) {
               return 0;
             } else {
@@ -253,10 +252,6 @@ export default function(layout, direction) {
             }
           },
           size: function(d) {
-            console.log(d);
-            console.log(d.scale(d.datum.value));
-            console.log(d.scale.bandwidth());
-            console.log(d.scale.step());
             if (d.datum.value === d.data.items[d.data.items.length - 1].value) {
               return 0;
             } else {
@@ -265,9 +260,10 @@ export default function(layout, direction) {
           },
           fill: "none",
           shape: "line",
-          stroke: function(d) {
+          stroke: "#7b7a78",
+          /*function(d) {
             return ThemeManager.colorFromTheme(14);
-          },
+          },*/
           strokeDasharray: "4 4",
           strokeWidth: 1,
           sizeLimits: {
