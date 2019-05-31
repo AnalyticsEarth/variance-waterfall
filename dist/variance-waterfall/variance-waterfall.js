@@ -70,7 +70,7 @@
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* WEBPACK VAR INJECTION */(function(global) {/*
-* picasso-plugin-q v0.25.2
+* picasso-plugin-q v0.25.3
 * Copyright (c) 2019 QlikTech International AB
 * Released under the MIT license.
 */
@@ -2701,7 +2701,7 @@ function formatter$1(pattern) {
   var qformat = dateFormatFactory(localeInfo, pattern, qtype);
   var memoized = memoize(qformat.format.bind(qformat), {
     toKey: function toKey(date) {
-      return _typeof(date) === 'object' ? date.getTime() : date;
+      return _typeof(date) === 'object' && typeof date.getTime === 'function' ? date.getTime() : date;
     }
   });
   /**
@@ -3437,7 +3437,7 @@ if("undefined"!=typeof a.qlikTheme){return a.qlikTheme.properties.palettes.ui[0]
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /*
-* picasso.js v0.25.2
+* picasso.js v0.25.3
 * Copyright (c) 2019 QlikTech International AB
 * Released under the MIT license.
 */
@@ -4171,7 +4171,7 @@ var extend = function extend() {
 };
 
 var about = {
-  version: '0.25.2'
+  version: '0.25.3'
 };
 
 function _typeof(obj) {
@@ -6531,7 +6531,7 @@ function stepAfter(context) {
   return new Step(context, 1);
 }
 
-function none(series, order) {
+function stackOffsetNone(series, order) {
   if (!((n = series.length) > 1)) return;
   for (var i = 1, j, s0, s1 = series[order[0]], n, m = s1.length; i < n; ++i) {
     s0 = s1, s1 = series[order[i]];
@@ -6541,7 +6541,7 @@ function none(series, order) {
   }
 }
 
-function none$1(series) {
+function stackOrderNone(series) {
   var n = series.length, o = new Array(n);
   while (--n >= 0) o[n] = n;
   return o;
@@ -6553,8 +6553,8 @@ function stackValue(d, key) {
 
 function stack() {
   var keys = constant([]),
-      order = none$1,
-      offset = none,
+      order = stackOrderNone,
+      offset = stackOffsetNone,
       value = stackValue;
 
   function stack(data) {
@@ -6590,11 +6590,11 @@ function stack() {
   };
 
   stack.order = function(_) {
-    return arguments.length ? (order = _ == null ? none$1 : typeof _ === "function" ? _ : constant(slice.call(_)), stack) : order;
+    return arguments.length ? (order = _ == null ? stackOrderNone : typeof _ === "function" ? _ : constant(slice.call(_)), stack) : order;
   };
 
   stack.offset = function(_) {
-    return arguments.length ? (offset = _ == null ? none : _, stack) : offset;
+    return arguments.length ? (offset = _ == null ? stackOffsetNone : _, stack) : offset;
   };
 
   return stack;
@@ -6606,7 +6606,7 @@ function stackOffsetExpand(series, order) {
     for (y = i = 0; i < n; ++i) y += series[i][j][1] || 0;
     if (y) for (i = 0; i < n; ++i) series[i][j][1] /= y;
   }
-  none(series, order);
+  stackOffsetNone(series, order);
 }
 
 function stackOffsetDiverging(series, order) {
@@ -6630,7 +6630,7 @@ function stackOffsetSilhouette(series, order) {
     for (var i = 0, y = 0; i < n; ++i) y += series[i][j][1] || 0;
     s0[j][1] += s0[j][0] = -y / 2;
   }
-  none(series, order);
+  stackOffsetNone(series, order);
 }
 
 function stackOffsetWiggle(series, order) {
@@ -6653,12 +6653,12 @@ function stackOffsetWiggle(series, order) {
     if (s1) y -= s2 / s1;
   }
   s0[j - 1][1] += s0[j - 1][0] = y;
-  none(series, order);
+  stackOffsetNone(series, order);
 }
 
 function appearance(series) {
   var peaks = series.map(peak);
-  return none$1(series).sort(function(a, b) { return peaks[a] - peaks[b]; });
+  return stackOrderNone(series).sort(function(a, b) { return peaks[a] - peaks[b]; });
 }
 
 function peak(series) {
@@ -6667,9 +6667,9 @@ function peak(series) {
   return j;
 }
 
-function ascending(series) {
+function stackOrderAscending(series) {
   var sums = series.map(sum);
-  return none$1(series).sort(function(a, b) { return sums[a] - sums[b]; });
+  return stackOrderNone(series).sort(function(a, b) { return sums[a] - sums[b]; });
 }
 
 function sum(series) {
@@ -6704,7 +6704,7 @@ function stackOrderInsideOut(series) {
 }
 
 function stackOrderReverse(series) {
-  return none$1(series).reverse();
+  return stackOrderNone(series).reverse();
 }
 
 function registryFactory(parentRegistry) {
@@ -7293,7 +7293,6 @@ millisecond.every = function(k) {
     return (end - start) / k;
   });
 };
-var milliseconds = millisecond.range;
 
 var durationSecond = 1e3;
 var durationMinute = 6e4;
@@ -7302,7 +7301,7 @@ var durationDay = 864e5;
 var durationWeek = 6048e5;
 
 var second = newInterval(function(date) {
-  date.setTime(Math.floor(date / durationSecond) * durationSecond);
+  date.setTime(date - date.getMilliseconds());
 }, function(date, step) {
   date.setTime(+date + step * durationSecond);
 }, function(start, end) {
@@ -7310,10 +7309,9 @@ var second = newInterval(function(date) {
 }, function(date) {
   return date.getUTCSeconds();
 });
-var seconds = second.range;
 
 var minute = newInterval(function(date) {
-  date.setTime(Math.floor(date / durationMinute) * durationMinute);
+  date.setTime(date - date.getMilliseconds() - date.getSeconds() * durationSecond);
 }, function(date, step) {
   date.setTime(+date + step * durationMinute);
 }, function(start, end) {
@@ -7321,12 +7319,9 @@ var minute = newInterval(function(date) {
 }, function(date) {
   return date.getMinutes();
 });
-var minutes = minute.range;
 
 var hour = newInterval(function(date) {
-  var offset = date.getTimezoneOffset() * durationMinute % durationHour;
-  if (offset < 0) offset += durationHour;
-  date.setTime(Math.floor((+date - offset) / durationHour) * durationHour + offset);
+  date.setTime(date - date.getMilliseconds() - date.getSeconds() * durationSecond - date.getMinutes() * durationMinute);
 }, function(date, step) {
   date.setTime(+date + step * durationHour);
 }, function(start, end) {
@@ -7334,7 +7329,6 @@ var hour = newInterval(function(date) {
 }, function(date) {
   return date.getHours();
 });
-var hours = hour.range;
 
 var day = newInterval(function(date) {
   date.setHours(0, 0, 0, 0);
@@ -7345,7 +7339,6 @@ var day = newInterval(function(date) {
 }, function(date) {
   return date.getDate() - 1;
 });
-var days = day.range;
 
 function weekday(i) {
   return newInterval(function(date) {
@@ -7366,10 +7359,6 @@ var thursday = weekday(4);
 var friday = weekday(5);
 var saturday = weekday(6);
 
-var sundays = sunday.range;
-var mondays = monday.range;
-var thursdays = thursday.range;
-
 var month = newInterval(function(date) {
   date.setDate(1);
   date.setHours(0, 0, 0, 0);
@@ -7380,7 +7369,6 @@ var month = newInterval(function(date) {
 }, function(date) {
   return date.getMonth();
 });
-var months = month.range;
 
 var year = newInterval(function(date) {
   date.setMonth(0, 1);
@@ -7403,7 +7391,6 @@ year.every = function(k) {
     date.setFullYear(date.getFullYear() + step * k);
   });
 };
-var years = year.range;
 
 var utcMinute = newInterval(function(date) {
   date.setUTCSeconds(0, 0);
@@ -7414,7 +7401,6 @@ var utcMinute = newInterval(function(date) {
 }, function(date) {
   return date.getUTCMinutes();
 });
-var utcMinutes = utcMinute.range;
 
 var utcHour = newInterval(function(date) {
   date.setUTCMinutes(0, 0, 0);
@@ -7425,7 +7411,6 @@ var utcHour = newInterval(function(date) {
 }, function(date) {
   return date.getUTCHours();
 });
-var utcHours = utcHour.range;
 
 var utcDay = newInterval(function(date) {
   date.setUTCHours(0, 0, 0, 0);
@@ -7436,7 +7421,6 @@ var utcDay = newInterval(function(date) {
 }, function(date) {
   return date.getUTCDate() - 1;
 });
-var utcDays = utcDay.range;
 
 function utcWeekday(i) {
   return newInterval(function(date) {
@@ -7457,10 +7441,6 @@ var utcThursday = utcWeekday(4);
 var utcFriday = utcWeekday(5);
 var utcSaturday = utcWeekday(6);
 
-var utcSundays = utcSunday.range;
-var utcMondays = utcMonday.range;
-var utcThursdays = utcThursday.range;
-
 var utcMonth = newInterval(function(date) {
   date.setUTCDate(1);
   date.setUTCHours(0, 0, 0, 0);
@@ -7471,7 +7451,6 @@ var utcMonth = newInterval(function(date) {
 }, function(date) {
   return date.getUTCMonth();
 });
-var utcMonths = utcMonth.range;
 
 var utcYear = newInterval(function(date) {
   date.setUTCMonth(0, 1);
@@ -7494,7 +7473,6 @@ utcYear.every = function(k) {
     date.setUTCFullYear(date.getUTCFullYear() + step * k);
   });
 };
-var utcYears = utcYear.range;
 
 function localDate(d) {
   if (0 <= d.y && d.y < 100) {
@@ -8417,15 +8395,15 @@ function field(data) {
 
 var OFFSETS = {
   diverging: stackOffsetDiverging,
-  none: none,
+  none: stackOffsetNone,
   silhouette: stackOffsetSilhouette,
   expand: stackOffsetExpand,
   wiggle: stackOffsetWiggle
 };
 var ORDERS = {
-  ascending: ascending,
+  ascending: stackOrderAscending,
   insideout: stackOrderInsideOut,
-  none: none$1,
+  none: stackOrderNone,
   reverse: stackOrderReverse
 };
 
@@ -8783,7 +8761,7 @@ function collection(formattersConfig, data, deps) {
   };
 }
 
-function ascending$1(a, b) {
+function ascending(a, b) {
   return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
 }
 
@@ -8815,14 +8793,14 @@ function bisector(compare) {
 
 function ascendingComparator(f) {
   return function(d, x) {
-    return ascending$1(f(d), x);
+    return ascending(f(d), x);
   };
 }
 
-var ascendingBisect = bisector(ascending$1);
+var ascendingBisect = bisector(ascending);
 var bisectRight = ascendingBisect.right;
 
-function range(start, stop, step) {
+function sequence(start, stop, step) {
   start = +start, stop = +stop, step = (n = arguments.length) < 2 ? (stop = start, start = 0, 1) : n < 3 ? 1 : +step;
 
   var i = -1,
@@ -9058,7 +9036,7 @@ function band() {
   var scale = ordinal().unknown(undefined),
       domain = scale.domain,
       ordinalRange = scale.range,
-      range$1 = [0, 1],
+      range = [0, 1],
       step,
       bandwidth,
       round = false,
@@ -9070,15 +9048,15 @@ function band() {
 
   function rescale() {
     var n = domain().length,
-        reverse = range$1[1] < range$1[0],
-        start = range$1[reverse - 0],
-        stop = range$1[1 - reverse];
+        reverse = range[1] < range[0],
+        start = range[reverse - 0],
+        stop = range[1 - reverse];
     step = (stop - start) / Math.max(1, n - paddingInner + paddingOuter * 2);
     if (round) step = Math.floor(step);
     start += (stop - start - step * (n - paddingInner)) * align;
     bandwidth = step * (1 - paddingInner);
     if (round) start = Math.round(start), bandwidth = Math.round(bandwidth);
-    var values = range(n).map(function(i) { return start + step * i; });
+    var values = sequence(n).map(function(i) { return start + step * i; });
     return ordinalRange(reverse ? values.reverse() : values);
   }
 
@@ -9087,11 +9065,11 @@ function band() {
   };
 
   scale.range = function(_) {
-    return arguments.length ? (range$1 = [+_[0], +_[1]], rescale()) : range$1.slice();
+    return arguments.length ? (range = [+_[0], +_[1]], rescale()) : range.slice();
   };
 
   scale.rangeRound = function(_) {
-    return range$1 = [+_[0], +_[1]], round = true, rescale();
+    return range = [+_[0], +_[1]], round = true, rescale();
   };
 
   scale.bandwidth = function() {
@@ -9123,7 +9101,7 @@ function band() {
   };
 
   scale.copy = function() {
-    return band(domain(), range$1)
+    return band(domain(), range)
         .round(round)
         .paddingInner(paddingInner)
         .paddingOuter(paddingOuter)
@@ -9684,7 +9662,7 @@ function nogamma(a, b) {
   return d ? linear(a, d) : constant$1(isNaN(a) ? b : a);
 }
 
-var rgb$1 = (function rgbGamma(y) {
+var interpolateRgb = (function rgbGamma(y) {
   var color = gamma(y);
 
   function rgb$1(start, end) {
@@ -9713,7 +9691,7 @@ function array$1(a, b) {
       c = new Array(nb),
       i;
 
-  for (i = 0; i < na; ++i) x[i] = value(a[i], b[i]);
+  for (i = 0; i < na; ++i) x[i] = interpolateValue(a[i], b[i]);
   for (; i < nb; ++i) c[i] = b[i];
 
   return function(t) {
@@ -9729,13 +9707,13 @@ function date(a, b) {
   };
 }
 
-function number(a, b) {
+function interpolateNumber(a, b) {
   return a = +a, b -= a, function(t) {
     return a + b * t;
   };
 }
 
-function object(a, b) {
+function interpolateObject(a, b) {
   var i = {},
       c = {},
       k;
@@ -9745,7 +9723,7 @@ function object(a, b) {
 
   for (k in b) {
     if (k in a) {
-      i[k] = value(a[k], b[k]);
+      i[k] = interpolateValue(a[k], b[k]);
     } else {
       c[k] = b[k];
     }
@@ -9797,7 +9775,7 @@ function string(a, b) {
       else s[++i] = bm;
     } else { // interpolate non-matching numbers
       s[++i] = null;
-      q.push({i: i, x: number(am, bm)});
+      q.push({i: i, x: interpolateNumber(am, bm)});
     }
     bi = reB.lastIndex;
   }
@@ -9820,16 +9798,16 @@ function string(a, b) {
         });
 }
 
-function value(a, b) {
+function interpolateValue(a, b) {
   var t = typeof b, c;
   return b == null || t === "boolean" ? constant$1(b)
-      : (t === "number" ? number
-      : t === "string" ? ((c = color(b)) ? (b = c, rgb$1) : string)
-      : b instanceof color ? rgb$1
+      : (t === "number" ? interpolateNumber
+      : t === "string" ? ((c = color(b)) ? (b = c, interpolateRgb) : string)
+      : b instanceof color ? interpolateRgb
       : b instanceof Date ? date
       : Array.isArray(b) ? array$1
-      : typeof b.valueOf !== "function" && typeof b.toString !== "function" || isNaN(b) ? object
-      : number)(a, b);
+      : typeof b.valueOf !== "function" && typeof b.toString !== "function" || isNaN(b) ? interpolateObject
+      : interpolateNumber)(a, b);
 }
 
 function interpolateRound(a, b) {
@@ -9848,7 +9826,7 @@ function constant$2(x) {
   };
 }
 
-function number$1(x) {
+function number(x) {
   return +x;
 }
 
@@ -9914,7 +9892,7 @@ function copy(source, target) {
 function transformer() {
   var domain = unit,
       range = unit,
-      interpolate = value,
+      interpolate = interpolateValue,
       transform,
       untransform,
       unknown,
@@ -9934,11 +9912,11 @@ function transformer() {
   }
 
   scale.invert = function(y) {
-    return clamp(untransform((input || (input = piecewise(range, domain.map(transform), number)))(y)));
+    return clamp(untransform((input || (input = piecewise(range, domain.map(transform), interpolateNumber)))(y)));
   };
 
   scale.domain = function(_) {
-    return arguments.length ? (domain = map$1.call(_, number$1), clamp === identity$2 || (clamp = clamper(domain)), rescale()) : domain.slice();
+    return arguments.length ? (domain = map$1.call(_, number), clamp === identity$2 || (clamp = clamper(domain)), rescale()) : domain.slice();
   };
 
   scale.range = function(_) {
@@ -11333,7 +11311,7 @@ function scaleSequentialColor() {
   var settings = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   var data = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
   var resources = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-  var s = scaleLinear(settings, data, resources).clamp(true).interpolate(rgb$1);
+  var s = scaleLinear(settings, data, resources).clamp(true).interpolate(interpolateRgb);
   var stgns = resolveSettings$1(settings, DEFAULT_SETTINGS$2, {
     data: data,
     resources: resources
@@ -13814,13 +13792,13 @@ function tween(_ref, _ref2, config) {
         var id = trackBy(node, i);
 
         if (ids[id]) {
-          updated.ips.push(object(ids[id], node));
+          updated.ips.push(interpolateObject(ids[id], node));
           updated.nodes.push(node);
           toBeUpdated.push(ids[id]);
           ids[id] = false;
         } else {
           entered.nodes.push(node);
-          entered.ips.push(object({
+          entered.ips.push(interpolateObject({
             r: 0.001,
             opacity: 0
           }, node));
@@ -13829,7 +13807,7 @@ function tween(_ref, _ref2, config) {
       Object.keys(ids).forEach(function (key) {
         if (ids[key]) {
           exited.nodes.push(ids[key]);
-          exited.ips.push(object(ids[key], extend({}, ids[key], {
+          exited.ips.push(interpolateObject(ids[key], extend({}, ids[key], {
             r: 0.0001,
             opacity: 0
           })));
@@ -13841,7 +13819,7 @@ function tween(_ref, _ref2, config) {
           easing: cubicInOut,
           duration: 200,
           tweens: exited.ips,
-          nodes: toBeUpdated.concat()
+          nodes: [].concat(toBeUpdated)
         });
       }
 
@@ -20827,7 +20805,7 @@ var refLineComponent = {
     });
     var items = []; // Loop through all X and Y lines
 
-    _toConsumableArray$1(this.lines.x).concat(_toConsumableArray$1(this.lines.y)).forEach(function (p) {
+    [].concat(_toConsumableArray$1(this.lines.x), _toConsumableArray$1(this.lines.y)).forEach(function (p) {
       var show = p.show === true || typeof p.show === 'undefined';
 
       if (show) {
@@ -20842,7 +20820,6 @@ var refLineComponent = {
         });
       }
     }); // Handle out of bounds
-
 
     if (settings.style.oob.show) {
       oobManager({
@@ -24888,7 +24865,6 @@ function filterOverlappingLabels$1(_ref) {
   };
 }
 
-var LINE_HEIGHT = 1.5;
 var PADDING$1 = 4; // const DOUBLE_PADDING = PADDING * 2;
 
 function cbContext(node, chart) {
@@ -25055,10 +25031,10 @@ function findBestPlacement(_ref2) {
     boundaries.push(testBounds);
     largest = !p || testBounds.height > largest.height ? testBounds : largest;
 
-    if (orientation === 'v' && (fitsHorizontally && testBounds.height > measured.height * LINE_HEIGHT || !fitsHorizontally && testBounds.height > measured.width)) {
+    if (orientation === 'v' && (fitsHorizontally && testBounds.height >= measured.height || !fitsHorizontally && testBounds.height >= measured.width && testBounds.width >= measured.height)) {
       bounds = testBounds;
       break;
-    } else if (orientation === 'h' && testBounds.height > measured.height && testBounds.width > measured.width) {
+    } else if (orientation === 'h' && testBounds.height >= measured.height && testBounds.width >= measured.width) {
       bounds = testBounds;
       break;
     }
@@ -25225,7 +25201,7 @@ function placeInBars(_ref3) {
   var backgrounds = filteredLabels.filter(function (lb) {
     return typeof lb.backgroundBounds !== 'undefined';
   }).map(toBackground);
-  return _toConsumableArray$1(backgrounds).concat(_toConsumableArray$1(filteredLabels));
+  return [].concat(_toConsumableArray$1(backgrounds), _toConsumableArray$1(filteredLabels));
 }
 function precalculate(_ref4) {
   var nodes = _ref4.nodes,
@@ -26256,7 +26232,7 @@ function slices(_ref9) {
   return labels;
 }
 
-var LINE_HEIGHT$1 = 1.2;
+var LINE_HEIGHT = 1.2;
 var CIRCLE_FACTOR = 0.9;
 
 function cbContext$2(node, chart) {
@@ -26292,7 +26268,7 @@ function placeTextInRect$1(rect, text, opts) {
 
   var wiggleWidth = Math.max(0, rect.width - textMetrics.width);
   label.x = rect.x + opts.align * wiggleWidth;
-  label.y = rect.y + textMetrics.height / LINE_HEIGHT$1;
+  label.y = rect.y + textMetrics.height / LINE_HEIGHT;
   return label;
 }
 
@@ -27948,7 +27924,7 @@ function createTickNodes(ctx, legendNode) {
   return {
     type: 'container',
     id: 'legend-seq-ticks',
-    children: _toConsumableArray$1(nodes).concat([rangeSelectorRect])
+    children: [].concat(_toConsumableArray$1(nodes), [rangeSelectorRect])
   };
 }
 
@@ -34577,7 +34553,7 @@ function polylineToPolygonCollider(points, radius) {
 
   return {
     type: 'polygon',
-    vertices: open.concat(close)
+    vertices: [].concat(open, close)
   };
 }
 
@@ -37022,7 +36998,7 @@ function renderer$1() {
     defs.children.length = 0;
     var sceneContainer = {
       type: 'container',
-      children: Array.isArray(nodes) ? _toConsumableArray$1(nodes).concat([defs]) : nodes,
+      children: Array.isArray(nodes) ? [].concat(_toConsumableArray$1(nodes), [defs]) : nodes,
       transform: rect.edgeBleed.bool ? "translate(".concat(rect.edgeBleed.left * scaleX, ", ").concat(rect.edgeBleed.top * scaleY, ")") : ''
     };
 
@@ -38353,7 +38329,7 @@ module.exports = "<div class=\"lrp\" id=\"container\" style=\"height:100%;positi
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-Object.defineProperty(exports,"__esModule",{value:!0});var colorsAndLegend={translation:"properties.colorsAndLegend",type:"items",grouped:!0,items:{colors:{type:"items",items:{autoColor:{ref:"color.auto",type:"boolean",translation:"properties.colors",component:"switch",defaultValue:!0,options:[{value:!0,translation:"Common.Auto"},{value:!1,translation:"Common.Custom"}]},positiveValueColor:{ref:"color.positiveValue.paletteColor",translation:"properties.waterfall.color.positiveValueColor",type:"object",component:"color-picker",dualOutput:!0,defaultValue:{index:6,color:null},show:function a(b){return!b.color.auto}},negativeValueColor:{ref:"color.negativeValue.paletteColor",translation:"properties.waterfall.color.negativeValueColor",type:"object",component:"color-picker",dualOutput:!0,defaultValue:{index:-1,color:"#cc6677"},show:function a(b){return!b.color.auto}},subtotalColor:{ref:"color.subtotal.paletteColor",label:"Start Value Color",type:"object",component:"color-picker",dualOutput:!0,defaultValue:{index:-1,color:"#c3c3c3"},show:function a(b){return!b.color.auto}},subtotalEndColor:{ref:"color.subtotalEnd.paletteColor",label:"End Value Color",type:"object",component:"color-picker",dualOutput:!0,defaultValue:{index:-1,color:"#c3c3c3"},show:function a(b){return!b.color.auto}}}},legend:{type:"items",items:{show:{ref:"legend.show",type:"boolean",translation:"properties.legend.show",component:"switch",defaultValue:!0,options:[{value:!0,translation:"Common.Auto"},{value:!1,translation:"properties.off"}]},dock:{type:"string",component:"dropdown",ref:"legend.dock",translation:"properties.legend.position",options:[{value:"auto",translation:"Common.Auto"},{value:"right",translation:"properties.dock.right"},{value:"bottom",translation:"Common.Bottom"},{value:"left",translation:"properties.dock.left"},{value:"top",translation:"Common.Top"}],defaultValue:"auto",show:function a(b){return b.legend.show}}}}}},s={type:"items",translation:"properties.presentation",grouped:!0,items:{gridLines:{type:"items",snapshot:{tid:"property-gridLines"},items:{showGridLines:{ref:"gridlines.auto",type:"boolean",translation:"properties.gridLine.spacing",component:"switch",defaultValue:!0,options:[{value:!0,translation:"Common.Auto"},{value:!1,translation:"Common.Custom"}]},gridSpacing:{ref:"gridlines.spacing",type:"number",component:"dropdown",defaultValue:2,options:[{value:0,translation:"properties.gridLine.noLines"},{value:2,translation:"properties.gridLine.medium"},{value:3,translation:"properties.gridLine.narrow"}],show:function(a){return a.gridlines&&!a.gridlines.auto}}}},showLabels:{ref:"dataPoint.showLabels",type:"boolean",translation:"properties.dataPoints.labelmode",component:"switch",defaultValue:!0,options:[{value:!0,translation:"Common.Auto"},{value:!1,translation:"properties.off"}],snapshot:{tid:"property-dataPoints"}},names:{type:"items",items:{showLabels:{ref:"labelsshow",type:"boolean",label:"Labels",component:"switch",defaultValue:!0,options:[{value:!0,translation:"Common.Auto"},{value:!1,translation:"Common.Custom"}]},startName:{ref:"startName",type:"string",label:"Start Value Label",expression:"optional",defaultValue:"Start Value",show:function(a){return!a.labelsshow}},endName:{ref:"endName",type:"string",label:"End Value Label",expression:"optional",defaultValue:"End Value",show:function(a){return!a.labelsshow}},posName:{ref:"posName",type:"string",label:"Positive Label",expression:"optional",defaultValue:"Positive Variance",show:function(a){return!a.labelsshow}},negName:{ref:"negName",type:"string",label:"Negative Label",expression:"optional",defaultValue:"Negative Variance",show:function(a){return!a.labelsshow}}}}}},u={uses:"axis.picasso.measureAxis",label:"Y-axis",items:{title:{ref:"measureAxis.title",type:"string",label:"Axis Title",defaultValue:"",expression:"optional"}}},c={uses:"axis.picasso.dimensionAxis"},d={type:"items",component:"expandable-items",translation:"properties.addons",items:{dataHandling:{uses:"dataHandling",items:{suppressZero:null,calcCond:{uses:"calcCond"}}}}},about={type:"items",label:"About",items:{about1:{type:"string",component:"text",label:"Steven Pressland 2019"},about1a:{type:"string",component:"text",label:"v1.1.2"},about2:{type:"string",component:"text",label:"GitHub: www.github.com/analyticsearth"},about3:{type:"string",component:"text",label:"A Waterfall chart for displaying variance between two metrics, walking through a set of dimension values."}}};exports.default={type:"items",component:"accordion",items:{data:{uses:"data",items:{dimensions:{min:1,max:1,disabledRef:"",description:function a(){return"Bridge Dimension"}},measures:{min:2,max:2,disabledRef:"",description:function b(c,a){return["Start Value","End Value"][a]},items:{variance:{show:function b(c,a){if(a.properties.qHyperCubeDef.qMeasures[0]==c){return!0}else{return!1}},type:"string",label:"Variance Formula",component:"expression",ref:"qAttributeExpressions.0.qExpression",defaultValue:function a(){return"num(Column(2) - Column(1),'#,##0.00')"}}}}}},sorting:{uses:"sorting"},addons:d,settings:{uses:"settings",items:{presentation:s,colors:colorsAndLegend,measureAxis:u,dimensionAxis:c}},about:about}};
+Object.defineProperty(exports,"__esModule",{value:!0});var colorsAndLegend={translation:"properties.colorsAndLegend",type:"items",grouped:!0,items:{colors:{type:"items",items:{autoColor:{ref:"color.auto",type:"boolean",translation:"properties.colors",component:"switch",defaultValue:!0,options:[{value:!0,translation:"Common.Auto"},{value:!1,translation:"Common.Custom"}]},positiveValueColor:{ref:"color.positiveValue.paletteColor",translation:"properties.waterfall.color.positiveValueColor",type:"object",component:"color-picker",dualOutput:!0,defaultValue:{index:6,color:null},show:function a(b){return!b.color.auto}},negativeValueColor:{ref:"color.negativeValue.paletteColor",translation:"properties.waterfall.color.negativeValueColor",type:"object",component:"color-picker",dualOutput:!0,defaultValue:{index:-1,color:"#cc6677"},show:function a(b){return!b.color.auto}},subtotalColor:{ref:"color.subtotal.paletteColor",label:"Start Value Color",type:"object",component:"color-picker",dualOutput:!0,defaultValue:{index:-1,color:"#c3c3c3"},show:function a(b){return!b.color.auto}},subtotalEndColor:{ref:"color.subtotalEnd.paletteColor",label:"End Value Color",type:"object",component:"color-picker",dualOutput:!0,defaultValue:{index:-1,color:"#c3c3c3"},show:function a(b){return!b.color.auto}}}},legend:{type:"items",items:{show:{ref:"legend.show",type:"boolean",translation:"properties.legend.show",component:"switch",defaultValue:!0,options:[{value:!0,translation:"Common.Auto"},{value:!1,translation:"properties.off"}]},dock:{type:"string",component:"dropdown",ref:"legend.dock",translation:"properties.legend.position",options:[{value:"auto",translation:"Common.Auto"},{value:"right",translation:"properties.dock.right"},{value:"bottom",translation:"Common.Bottom"},{value:"left",translation:"properties.dock.left"},{value:"top",translation:"Common.Top"}],defaultValue:"auto",show:function a(b){return b.legend.show}}}}}},s={type:"items",translation:"properties.presentation",grouped:!0,items:{gridLines:{type:"items",snapshot:{tid:"property-gridLines"},items:{showGridLines:{ref:"gridlines.auto",type:"boolean",translation:"properties.gridLine.spacing",component:"switch",defaultValue:!0,options:[{value:!0,translation:"Common.Auto"},{value:!1,translation:"Common.Custom"}]},gridSpacing:{ref:"gridlines.spacing",type:"number",component:"dropdown",defaultValue:2,options:[{value:0,translation:"properties.gridLine.noLines"},{value:2,translation:"properties.gridLine.medium"},{value:3,translation:"properties.gridLine.narrow"}],show:function(a){return a.gridlines&&!a.gridlines.auto}}}},showLabels:{ref:"dataPoint.showLabels",type:"boolean",translation:"properties.dataPoints.labelmode",component:"switch",defaultValue:!0,options:[{value:!0,translation:"Common.Auto"},{value:!1,translation:"properties.off"}],snapshot:{tid:"property-dataPoints"}},names:{type:"items",items:{showLabels:{ref:"labelsshow",type:"boolean",label:"Labels",component:"switch",defaultValue:!0,options:[{value:!0,translation:"Common.Auto"},{value:!1,translation:"Common.Custom"}]},startName:{ref:"startName",type:"string",label:"Start Value Label",expression:"optional",defaultValue:"Start Value",show:function(a){return!a.labelsshow}},endName:{ref:"endName",type:"string",label:"End Value Label",expression:"optional",defaultValue:"End Value",show:function(a){return!a.labelsshow}},posName:{ref:"posName",type:"string",label:"Positive Label",expression:"optional",defaultValue:"Positive Variance",show:function(a){return!a.labelsshow}},negName:{ref:"negName",type:"string",label:"Negative Label",expression:"optional",defaultValue:"Negative Variance",show:function(a){return!a.labelsshow}}}}}},u={uses:"axis.picasso.measureAxis",label:"Y-axis",items:{title:{ref:"measureAxis.title",type:"string",label:"Axis Title",defaultValue:"",expression:"optional"}}},c={uses:"axis.picasso.dimensionAxis"},d={type:"items",component:"expandable-items",translation:"properties.addons",items:{dataHandling:{uses:"dataHandling",items:{suppressZero:null,calcCond:{uses:"calcCond"}}}}},about={type:"items",label:"About",items:{about1:{type:"string",component:"text",label:"Steven Pressland 2019"},about1a:{type:"string",component:"text",label:"v1.1.3"},about2:{type:"string",component:"text",label:"GitHub: www.github.com/analyticsearth"},about3:{type:"string",component:"text",label:"A Waterfall chart for displaying variance between two metrics, walking through a set of dimension values."}}};exports.default={type:"items",component:"accordion",items:{data:{uses:"data",items:{dimensions:{min:1,max:1,disabledRef:"",description:function a(){return"Bridge Dimension"}},measures:{min:2,max:2,disabledRef:"",description:function b(c,a){return["Start Value","End Value"][a]},items:{variance:{show:function b(c,a){if(a.properties.qHyperCubeDef.qMeasures[0]==c){return!0}else{return!1}},type:"string",label:"Variance Formula",component:"expression",ref:"qAttributeExpressions.0.qExpression",defaultValue:function a(){return"num(Column(2) - Column(1),'#,##0.00')"}}}}}},sorting:{uses:"sorting"},addons:d,settings:{uses:"settings",items:{presentation:s,colors:colorsAndLegend,measureAxis:u,dimensionAxis:c}},about:about}};
 
 /***/ }),
 /* 9 */
@@ -38404,18 +38380,18 @@ module.exports = g;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-Object.defineProperty(exports,'__esModule',{value:!0});exports.default=function(a,b){var c={startvalue:a.labelsshow?'Start Value':a.startName,endvalue:a.labelsshow?'End Value':a.endName,negative:a.labelsshow?'Negative Variance':a.negName,positive:a.labelsshow?'Positive Variance':a.posName},d={startvalue:a.color.auto?_theme2.default.colorOther(2):_theme2.default.colorFromPicker(a.color.subtotal.paletteColor),endvalue:a.color.auto?_theme2.default.colorOther(2):_theme2.default.colorFromPicker(a.color.subtotalEnd.paletteColor),negative:a.color.auto?_theme2.default.colorFromSeq(1):_theme2.default.colorFromPicker(a.color.negativeValue.paletteColor),positive:a.color.auto?_theme2.default.colorFromSeq(0):_theme2.default.colorFromPicker(a.color.positiveValue.paletteColor)},e=!0,f='left',g='right';if('rtl'===b){e=!1;f='right';g='left'}return{interactions:(0,_interactions.interactionsSetup)(),scales:{v:{data:{fields:['qMeasureInfo/0','qMeasureInfo/1']},type:'linear',invert:!0,expand:.01,min:!a.measureAxis.autoMinMax&&('min'==a.measureAxis.minMax||'minMax'==a.measureAxis.minMax)?a.measureAxis.min:NaN,max:!a.measureAxis.autoMinMax&&('max'==a.measureAxis.minMax||'minMax'==a.measureAxis.minMax)?a.measureAxis.max:NaN,include:[0],spacing:.5,ticks:{distance:150*a.measureAxis.spacing},minorTicks:{count:1}},t:{data:{extract:{field:'qDimensionInfo/0'}},type:'band',invert:!e,padding:.2}},components:[{type:'text',show:'none'!=a.measureAxis.show&&'labels'!=a.measureAxis.show&&''!=a.measureAxis.title,text:a.measureAxis.title,dock:'near'===a.measureAxis.dock?f:g,displayOrder:1,style:{text:{fontSize:'13px',fontFamily:_theme2.default.getPicassoTheme()['$font-family']}}},{type:'text',show:'none'!=a.dimensionAxis.show&&'labels'!=a.dimensionAxis.show,text:a.qHyperCube.qDimensionInfo[0].qFallbackTitle,dock:'near'===a.dimensionAxis.dock?'bottom':'top',displayOrder:1,style:{text:{fontSize:'13px',fontFamily:_theme2.default.getPicassoTheme()['$font-family']}}},{type:'axis',dock:'near'===a.dimensionAxis.dock?'bottom':'top',key:'xaxis',scale:'t',displayOrder:0,settings:{labels:{show:'none'!=a.dimensionAxis.show&&'title'!=a.dimensionAxis.show,mode:a.dimensionAxis.label,tiltAngle:e?40:-40},ticks:{show:!0},line:{show:!0}}},{type:'axis',dock:'near'===a.measureAxis.dock?f:g,scale:'v',displayOrder:0,settings:{labels:{show:'none'!=a.measureAxis.show&&'title'!=a.measureAxis.show,mode:a.measureAxis.label},ticks:{show:'none'!=a.measureAxis.show&&'title'!=a.measureAxis.show},minorTicks:{/* Toggle minor-ticks on/off */show:!0,// Optional
+Object.defineProperty(exports,'__esModule',{value:!0});exports.default=function(a,b){var c={startvalue:a.labelsshow?'Start Value':a.startName,endvalue:a.labelsshow?'End Value':a.endName,negative:a.labelsshow?'Negative Variance':a.negName,positive:a.labelsshow?'Positive Variance':a.posName},d={startvalue:a.color.auto?_theme2.default.colorOther(2):_theme2.default.colorFromPicker(a.color.subtotal.paletteColor),endvalue:a.color.auto?_theme2.default.colorOther(2):_theme2.default.colorFromPicker(a.color.subtotalEnd.paletteColor),negative:a.color.auto?_theme2.default.colorFromSeq(1):_theme2.default.colorFromPicker(a.color.negativeValue.paletteColor),positive:a.color.auto?_theme2.default.colorFromSeq(0):_theme2.default.colorFromPicker(a.color.positiveValue.paletteColor)},e=!0,f='left',g='right';if('rtl'===b){e=!1;f='right';g='left'}return{interactions:(0,_interactions.interactionsSetup)(),scales:{v:{data:{fields:['qMeasureInfo/0','qMeasureInfo/1']},type:'linear',invert:!0,expand:.01,min:!a.measureAxis.autoMinMax&&('min'==a.measureAxis.minMax||'minMax'==a.measureAxis.minMax)?a.measureAxis.min:NaN,max:!a.measureAxis.autoMinMax&&('max'==a.measureAxis.minMax||'minMax'==a.measureAxis.minMax)?a.measureAxis.max:NaN,include:[0],spacing:.5,ticks:{distance:150*a.measureAxis.spacing},minorTicks:{count:1}},t:{data:{extract:{field:'qDimensionInfo/0'}},type:'band',invert:!e,padding:.2}},components:[{type:'text',show:'none'!=a.measureAxis.show&&'labels'!=a.measureAxis.show&&''!=a.measureAxis.title,text:a.measureAxis.title,layout:{dock:'near'===a.measureAxis.dock?f:g,displayOrder:1},style:{text:{fontSize:'13px',fontFamily:_theme2.default.getPicassoTheme()['$font-family']}}},{type:'text',show:'none'!=a.dimensionAxis.show&&'labels'!=a.dimensionAxis.show,text:a.qHyperCube.qDimensionInfo[0].qFallbackTitle,layout:{dock:'near'===a.dimensionAxis.dock?'bottom':'top',displayOrder:1},style:{text:{fontSize:'13px',fontFamily:_theme2.default.getPicassoTheme()['$font-family']}}},{type:'axis',key:'xaxis',scale:'t',layout:{dock:'near'===a.dimensionAxis.dock?'bottom':'top',displayOrder:0},settings:{labels:{show:'none'!=a.dimensionAxis.show&&'title'!=a.dimensionAxis.show,mode:a.dimensionAxis.label,tiltAngle:e?40:-40},ticks:{show:!0},line:{show:!0}}},{type:'axis',scale:'v',layout:{dock:'near'===a.measureAxis.dock?f:g,displayOrder:0},settings:{labels:{show:'none'!=a.measureAxis.show&&'title'!=a.measureAxis.show,mode:a.measureAxis.label},ticks:{show:'none'!=a.measureAxis.show&&'title'!=a.measureAxis.show},minorTicks:{/* Toggle minor-ticks on/off */show:!0,// Optional
 /* Size of the ticks in pixels. */tickSize:3,// Optional
 /* Space in pixels between the ticks and the line. */margin:0// Optional
-},line:{show:!0}}},{type:'box',key:'bars',displayOrder:1,data:{extract:{field:'qDimensionInfo/0',props:{start:{field:'qMeasureInfo/0'},end:{field:'qMeasureInfo/1'},var:{field:'qMeasureInfo/2'}}}},brush:{trigger:[{on:'tap',contexts:['highlight'],globalPropagation:'stop',propagation:'stop'}],consume:[{context:'highlight',style:{inactive:{opacity:.3}}}]},settings:{major:{scale:'t'},minor:{scale:'v'},orientation:'vertical',box:{width:1,minHeightPx:2,fill:function b(a){//console.log(d);
+},line:{show:!0}}},{type:'box',key:'bars',layout:{displayOrder:1},data:{extract:{field:'qDimensionInfo/0',props:{start:{field:'qMeasureInfo/0'},end:{field:'qMeasureInfo/1'},var:{field:'qMeasureInfo/2'}}}},brush:{trigger:[{on:'tap',contexts:['highlight'],globalPropagation:'stop',propagation:'stop'}],consume:[{context:'highlight',style:{inactive:{opacity:.3}}}]},settings:{major:{scale:'t'},minor:{scale:'v'},orientation:'vertical',box:{width:1,minHeightPx:2,fill:function b(a){//console.log(d);
 if(-4===a.datum.value){return d.startvalue}else if(-5===a.datum.value){return d.endvalue}else{if(0>a.datum.var.value){return d.negative}else{return d.positive}}}}}},{key:'p',type:'point',data:{extract:{field:'qDimensionInfo/0',props:{mm:{field:'qMeasureInfo/1'}}}},settings:{x:{scale:'t',fn:function b(a){if(e){return a.scale(a.datum.value)+a.scale.bandwidth()+(a.scale.step()-a.scale.bandwidth())/2;// + d.scale.bandwidth() - (d.scale.step() - d.scale.bandwidth());
 }else{return a.scale(a.datum.value)-(a.scale.step()-a.scale.bandwidth())/2}}},y:{scale:'v',ref:'mm'},opacity:function b(a){//console.log(d);
-if(a.datum.value===a.data.items[a.data.items.length-1].value){return 0}else{return 1}},size:function b(a){if(a.datum.value===a.data.items[a.data.items.length-1].value){return 0}else{return a.scale.step()}},fill:'none',shape:'line',stroke:function a(){return _theme2.default.colorFromTheme(14)},strokeDasharray:'4 4',strokeWidth:1,sizeLimits:{maxRelExtent:1}}},{type:'grid-line',show:a.gridlines.auto||0<a.gridlines.spacing,y:{scale:'v'},ticks:{show:a.gridlines.auto||1<a.gridlines.spacing,strokeWidth:1},minorTicks:{show:!a.gridlines.auto&&2<a.gridlines.spacing,strokeWidth:1}},{type:'labels',show:a.dataPoint.showLabels,displayOrder:2,// must be larger than the displayOrder for the 'bars' component
-settings:{sources:[{component:'bars',selector:'rect',// select all 'rect' shapes from the 'bars' component
+if(a.datum.value===a.data.items[a.data.items.length-1].value){return 0}else{return 1}},size:function b(a){if(a.datum.value===a.data.items[a.data.items.length-1].value){return 0}else{return a.scale.step()}},fill:'none',shape:'line',stroke:function a(){return _theme2.default.colorFromTheme(14)},strokeDasharray:'4 4',strokeWidth:1,sizeLimits:{maxRelExtent:1}}},{type:'grid-line',show:a.gridlines.auto||0<a.gridlines.spacing,y:{scale:'v'},ticks:{show:a.gridlines.auto||1<a.gridlines.spacing,strokeWidth:1},minorTicks:{show:!a.gridlines.auto&&2<a.gridlines.spacing,strokeWidth:1}},{type:'labels',show:a.dataPoint.showLabels,layout:{displayOrder:2// must be larger than the displayOrder for the 'bars' component
+},settings:{sources:[{component:'bars',selector:'rect',// select all 'rect' shapes from the 'bars' component
 strategy:{type:'bar',// the strategy type
 settings:{direction:function(a){var b=a.data;// data argument is the data bound to the shape in the referenced component
 return b&&b.end.value>b.start.value?'up':'down'},fontSize:12,align:.5,justify:1,labels:[{label:function c(a){var b=a.data;return b?b.end.label:''},placements:[// label placements in prio order. Label will be placed in the first place it fits into
-{position:'inside',fill:'#fff',align:.5,justify:.98},{position:'outside',fill:'#666',align:.5,justify:.01},{position:'opposite',fill:'#666',align:.5,justify:.01}]}]}}}]}},{scale:{type:'categorical-color',data:[c.startvalue,c.positive,c.negative,c.endvalue],range:[d.startvalue,d.positive,d.negative,d.endvalue]},type:'legend-cat',dock:'auto'===a.legend.dock?'top':a.legend.dock,show:a.legend.show,displayOrder:2,settings:{layout:{// Optional
+{position:'inside',fill:'#fff',align:.5,justify:.98},{position:'outside',fill:'#666',align:.5,justify:.01},{position:'opposite',fill:'#666',align:.5,justify:.01}]}]}}}]}},{scale:{type:'categorical-color',data:[c.startvalue,c.positive,c.negative,c.endvalue],range:[d.startvalue,d.positive,d.negative,d.endvalue]},type:'legend-cat',show:a.legend.show,layout:{dock:'auto'===a.legend.dock?'top':a.legend.dock,displayOrder:2},settings:{layout:{// Optional
 /* Maximum number of columns (vertical) or rows (horizontal) */size:1,// Optional
 /* Layout direction. Either `'ltr'` or `'rtl'` */direction:b,// Optional
 /* Initial scroll offset */scrollOffset:0// Optional
@@ -38434,7 +38410,7 @@ size:12// Optional
 /* Horizontal alignment of the text. Allowed values are `'start'`, `'middle'` and `'end'` */anchor:'start',/* Word break rule, how to apply line break if label text overflows its maxWidth property. Either `'break-word'` or `'break-all'` */wordBreak:'none',// Optional
 /* Max number of lines allowed if label is broken into multiple lines, is only appled when `wordBreak` is not set to `'none'` */maxLines:2,// Optional
 /* Maximum width of title, in px */maxWidth:156// Optional
-}}},{key:'rangex',displayOrder:5,type:'brush-range',settings:{brush:'highlight',direction:'horizontal',scale:'t',target:{component:'xaxis'},bubbles:{align:'start'}}}]}};var _theme=__webpack_require__(1),_theme2=_interopRequireDefault(_theme),_interactions=__webpack_require__(3);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}
+}}},{key:'rangex',layout:{displayOrder:5},type:'brush-range',settings:{brush:'highlight',direction:'horizontal',scale:'t',target:{component:'xaxis'},bubbles:{align:'start'}}}]}};var _theme=__webpack_require__(1),_theme2=_interopRequireDefault(_theme),_interactions=__webpack_require__(3);function _interopRequireDefault(a){return a&&a.__esModule?a:{default:a}}
 
 /***/ }),
 /* 13 */

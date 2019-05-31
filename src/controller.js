@@ -1,6 +1,7 @@
 import ConvertHypercube from "./converthypercube"
 import picasso from 'picasso.js';
 import pq from 'picasso-plugin-q';
+import picassoHammer from 'picasso-plugin-hammer';
 
 import bridgepicassospec from "./bridgepicassospec";
 import ThemeManager from './theme'
@@ -21,6 +22,7 @@ export default ['$scope', '$element', function($scope, $element) {
   $scope.app = qlik.currApp(this);
 
   picasso.use(pq);
+  picasso.use(picassoHammer);
 
   $scope.pic = picasso({
     renderer: {

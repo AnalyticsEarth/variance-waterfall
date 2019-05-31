@@ -67,8 +67,10 @@ export default function(layout, direction) {
         type: 'text',
         show: (layout.measureAxis.show != 'none' && layout.measureAxis.show != 'labels' && layout.measureAxis.title != ""),
         text: layout.measureAxis.title,
-        dock: layout.measureAxis.dock === 'near' ? dockLeft : dockRight,
-        displayOrder: 1,
+        layout:{
+          dock: layout.measureAxis.dock === 'near' ? dockLeft : dockRight,
+          displayOrder: 1
+        },
         style: {
           text: {
             fontSize: "13px",
@@ -80,8 +82,10 @@ export default function(layout, direction) {
         type: 'text',
         show: (layout.dimensionAxis.show != 'none' && layout.dimensionAxis.show != 'labels'),
         text: layout.qHyperCube.qDimensionInfo[0].qFallbackTitle,
-        dock: layout.dimensionAxis.dock === 'near' ? 'bottom' : 'top',
-        displayOrder: 1,
+        layout:{
+          dock: layout.dimensionAxis.dock === 'near' ? 'bottom' : 'top',
+          displayOrder: 1
+        },
         style: {
           text: {
             fontSize: "13px",
@@ -91,10 +95,12 @@ export default function(layout, direction) {
       },
       {
         type: 'axis',
-        dock: layout.dimensionAxis.dock === 'near' ? 'bottom' : 'top',
         key: 'xaxis',
         scale: 't',
-        displayOrder: 0,
+        layout:{
+          dock: layout.dimensionAxis.dock === 'near' ? 'bottom' : 'top',
+          displayOrder: 0
+        },
         settings: {
           labels: {
             show: (layout.dimensionAxis.show != 'none' && layout.dimensionAxis.show != 'title'),
@@ -110,9 +116,11 @@ export default function(layout, direction) {
         }
       }, {
         type: 'axis',
-        dock: layout.measureAxis.dock === 'near' ? dockLeft : dockRight,
         scale: 'v',
-        displayOrder: 0,
+        layout:{
+          dock: layout.measureAxis.dock === 'near' ? dockLeft : dockRight,
+          displayOrder: 0
+        },
         settings: {
           labels: {
             show: (layout.measureAxis.show != 'none' && layout.measureAxis.show != 'title'),
@@ -136,7 +144,9 @@ export default function(layout, direction) {
       }, {
         type: 'box',
         key: 'bars',
-        displayOrder: 1,
+        layout:{
+          displayOrder: 1
+        },
         data: {
           extract: {
             field: 'qDimensionInfo/0',
@@ -275,7 +285,9 @@ export default function(layout, direction) {
       {
         type: 'labels',
         show: layout.dataPoint.showLabels,
-        displayOrder: 2, // must be larger than the displayOrder for the 'bars' component
+        layout:{
+          displayOrder: 2 // must be larger than the displayOrder for the 'bars' component
+        },
         settings: {
           sources: [{
             component: 'bars',
@@ -330,9 +342,11 @@ export default function(layout, direction) {
           range: [colors.startvalue, colors.positive, colors.negative, colors.endvalue]
         },
         type: 'legend-cat',
-        dock: layout.legend.dock === "auto" ? "top" : layout.legend.dock,
         show: layout.legend.show,
-        displayOrder: 2,
+        layout:{
+          dock: layout.legend.dock === "auto" ? "top" : layout.legend.dock,
+          displayOrder: 2
+        },
         settings: {
           layout: { // Optional
             /* Maximum number of columns (vertical) or rows (horizontal) */
@@ -377,7 +391,9 @@ export default function(layout, direction) {
       },
       {
         key: 'rangex',
-        displayOrder: 5,
+        layout:{
+          displayOrder: 5
+        },
         type: 'brush-range',
         settings: {
           brush: 'highlight',
