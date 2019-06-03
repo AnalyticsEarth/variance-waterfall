@@ -9,7 +9,7 @@ var interactionsSetup = function() {
       type: 'Pan',
       options:{
         event: 'range',
-        dirction: Hammer.DIRECTION_HORIZONTAL
+        direction: 2 | 4
       },
       events:{
         rangestart: function(e){
@@ -64,4 +64,4 @@ var enableSelectionOnFirstDimension = function(that, chart, brush, layout) {
 export {
   interactionsSetup,
   enableSelectionOnFirstDimension
-}
+};

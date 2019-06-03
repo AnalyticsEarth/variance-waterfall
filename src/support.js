@@ -3,4 +3,4 @@ export default {
   export: true,
   exportData: true,
   viewData: true
-}
+};

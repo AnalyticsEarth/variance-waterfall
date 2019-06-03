@@ -1,4 +1,4 @@
-import ThemeManager from './theme'
+import ThemeManager from './theme';
 
 export default function($element, layout) {
   let app = this.$scope.qlik.currApp(this);
@@ -8,7 +8,6 @@ export default function($element, layout) {
     this.$scope.theme = qTheme;
     ThemeManager.setAppTheme(this.$scope.theme);
 
-    //let navmode = this.$scope.qlik.navigation.getMode();
     this.$scope.updatedData(layout, navmode, true);
     return this.$scope.qlik.Promise.resolve();
   });
