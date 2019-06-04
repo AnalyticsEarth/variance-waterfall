@@ -1,33 +1,22 @@
 # Variance Waterfall Chart for Qlik Sense
+This extension is part of the extension bundles for Qlik Sense. The repository is maintained and moderated by Qlik RD.
 
-The Variance Waterfall chart is a Qlik Sense extension to provide variance analysis between two measures shown over the different values of a dimension. This type of chart is primarily used in financial Actual v's Forecast analysis.
+Feel free to fork and suggest pull requests for improvements and bug fixes. Changes will be moderated and reviewed before inclusion in future bundle versions. Please note that emphasis is on backward compatibility, i.e. breaking changes will most likely not be approved.
 
-## Download
+Usage documentation for the extension is available at https://help.qlik.com.
 
-[**Download Here**](https://github.com/AnalyticsEarth/variance-waterfall/releases/download/v1.1.4/variance-waterfall.zip)
+# Developing the extension
+If you want to do code changes to the extension follow these simple steps to get going.
 
-Download the extension from the Releases page of github, you cannot install the contents of this GitHub repository.
+1. Get Qlik Sense Desktop
+1. Create a new app and add Variance waterfall to a sheet.
+2. Clone the repository
+3. Run `npm install`
+4. Run `npm run build` - to build a dev-version to the /dist folder.
+5. Move the content of the /dist folder to the extension directory. Usually in `C:/Users/<user>/Documents/Qlik/Sense/Extensions/qlik-variance-waterfall`.
 
-## How to Use
+# Original authors
+[https://github.com/AnalyticsEarth](https://github.com/AnalyticsEarth)
 
-The extension requires 1 dimension and 2 measures; One measure for the starting bar (typically the actual), another for the ending bar (typically the forecast). The Dimension provides the breakdown between the two measures, indicated as either a positive or negative amount. The extension only works when measure are SUM aggregations due to the way variance is calculated.
-
-### Changing Number Formatting
-
-Number Format must be set in 2 places, on the measure and in the `Variance Formula` expression on the first measure. This impacts the display on the variance bridge bars. Use the same Qlik formatting from the measure.
-
-### Example
-![Example screenshot of variance waterfall chart in Qlik Sense](docs/variance-waterfall-example.png?raw=true)
-
-## Support
-
-The extension supports the following Qlik Sense functionality:
-- Responsive Design
-- Themes
-- Printing
-- Export
-- Snapshots
-- Dimension Selection
-- Right-to-Left and Left-to-Right
-
-The extension is rendered using the Picasso.js chart framework, for more information visit [Picasso.js](https://picassojs.com/)
+# License
+Released under the [MIT License](LICENSE).

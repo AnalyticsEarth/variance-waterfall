@@ -1,22 +1,10 @@
 {
   "presets": [
-    ["env", {
-        "targets": {
-          "browsers": [
-            ">0.25%",
-            "not ie 11",
-            "not op_mini all"
-          ]
-        }
-      }] ,
-    ["minify",{
-      "simplify":false,
-      "builtIns":false,
-      "evaluate": false,
-		"removeConsole":{
-        "exclude": ["error", "warn", "info" ]
+    ["@babel/preset-env", {
+      "targets": {
+        "ie": "11"
       },
-      "removeDebugger":true
-      }]
+      "useBuiltIns": "entry"
+    }]
   ]
 }

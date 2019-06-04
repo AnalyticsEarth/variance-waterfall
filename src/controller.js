@@ -1,16 +1,12 @@
-import ConvertHypercube from "./converthypercube"
+import ConvertHypercube from "./converthypercube";
 import picasso from 'picasso.js';
 import pq from 'picasso-plugin-q';
 import picassoHammer from 'picasso-plugin-hammer';
 
 import bridgepicassospec from "./bridgepicassospec";
-import ThemeManager from './theme'
+import ThemeManager from './theme';
 
-import {
-  interactionsSetup,
-  mouseEventToRangeEvent,
-  enableSelectionOnFirstDimension
-} from './interactions.js'
+import { enableSelectionOnFirstDimension } from './interactions.js';
 
 var qlik = window.require('qlik');
 
@@ -44,19 +40,16 @@ export default ['$scope', '$element', function($scope, $element) {
     }
   });
 
-  $scope.chartBrush = enableSelectionOnFirstDimension($scope, $scope.chart, 'highlight', $scope.layout);
-
-
+  $scope.chartBrush =
+    enableSelectionOnFirstDimension($scope, $scope.chart, 'highlight', $scope.layout);
   $scope.updatedData = function(layout, mode, dataUpdate) {
     let up = {};
 
     if (dataUpdate) {
-      let hq = ConvertHypercube.convertHypercube($scope.layout.qHyperCube);
-      console.log($scope.layout.qHyperCube);
       up.data = [{
         type: 'q',
         key: 'qHyperCube',
-        data: hq
+        data: ConvertHypercube.convertHypercube($scope.layout.qHyperCube)
       }];
     }
 
@@ -64,8 +57,6 @@ export default ['$scope', '$element', function($scope, $element) {
       up.settings = bridgepicassospec(layout, $scope.$parent.options.direction);
     }
 
-    let update = $scope.chart.update(up);
-    console.log($scope.updated);
-  }
-
-}]
+    $scope.chart.update(up);
+  };
+}];

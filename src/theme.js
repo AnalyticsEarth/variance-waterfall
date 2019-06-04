@@ -21,10 +21,9 @@ const colorseq = [
   "#4477aa",
   "#cc6677",
   "#c3c3c3"
-]
+];
 
 class ThemeManager {
-
   static setAppTheme(theme) {
     ThemeManager.qlikTheme = theme;
   }
@@ -36,20 +35,17 @@ class ThemeManager {
     };
 
     return style;
-
   }
 
   static colorFromPicker(picker) {
     if (picker.index === -1) {
       return picker.color;
     } else {
-      return this.colorFromTheme(picker.index)
+      return this.colorFromTheme(picker.index);
     }
   }
 
   static colorFromTheme(index) {
-    //console.log("Return Color For Index:" + index);
-    //console.log(ThemeManager.qlikTheme);
     if (typeof ThemeManager.qlikTheme != 'undefined') {
       return ThemeManager.qlikTheme.properties.palettes.ui[0].colors[index - 1];
     } else {

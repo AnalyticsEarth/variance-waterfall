@@ -7,4 +7,4 @@ export default {
       qHeight: 1000
     }]
   }
-}
+};
