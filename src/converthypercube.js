@@ -90,6 +90,10 @@ class ConvertHypercube {
   }
 
   static createDataPage(hypercube) {
+    if (!hypercube.qDataPages) {
+      return {};
+    }
+
     let idp = hypercube.qDataPages[0];
     let matrix = this.createMatrix(hypercube);
     let dp = {
