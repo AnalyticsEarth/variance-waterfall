@@ -130,7 +130,8 @@ export default function (layout, direction) {
           show: true,
         },
       }
-    }, {
+    },
+    {
       type: 'axis',
       scale: 'v',
       layout: {
@@ -157,7 +158,8 @@ export default function (layout, direction) {
           show: true,
         },
       }
-    }, {
+    },
+    {
       type: 'box',
       key: 'bars',
       layout: {
@@ -418,6 +420,42 @@ export default function (layout, direction) {
         bubbles: {
           align: 'start'
         },
+      }
+    },
+    {
+      key: 'tooltip',
+      layout: {
+        displayOrder: 6
+      },
+      type: 'tooltip',
+      settings: {
+        filter: nodes => nodes.filter(node => node.key === 'bars'),
+        extract: ({ node }) => node.data.var.label,
+        content: ({ h, data }) => h('div', {}, data),
+        afterShow({ element }) {
+          element.children[0].style.opacity = 1;
+          element.children[1].style.opacity = 1;
+        },
+        onHide({ element }) {
+          element.children[0].style.opacity = 0;
+          element.children[1].style.opacity = 0;
+        },
+        placement: {
+          type: 'pointer',
+          area: 'target'
+        }
+      },
+      style: {
+        content: {
+          backgroundColor: 'rgba(64, 64, 64, 0.8)',
+          opacity: 0,
+          transition: 'opacity 50ms ease-in'
+        },
+        arrow: {
+          color: 'rgba(64, 64, 64, 0.8)',
+          opacity: 0,
+          transition: 'opacity 50ms ease-in'
+        }
       }
     }]
   };
