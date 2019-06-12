@@ -40,9 +40,9 @@ export default ['$scope', '$element', function($scope, $element) {
     }
   });
 
-  $scope.chartBrush =
-    enableSelectionOnFirstDimension($scope, $scope.chart, 'highlight', $scope.layout);
-  $scope.updatedData = function(layout, mode, dataUpdate) {
+  $scope.chartBrush
+    = enableSelectionOnFirstDimension($scope, $scope.chart, 'highlight', $scope.layout);
+  $scope.updatedData = function(layout, isEditMode, dataUpdate) {
     let up = {};
 
     if (dataUpdate) {
@@ -53,8 +53,8 @@ export default ['$scope', '$element', function($scope, $element) {
       }];
     }
 
-    if (mode === 'edit' || typeof $scope.chart.settings === 'undefined') {
-      up.settings = bridgepicassospec(layout, $scope.$parent.options.direction);
+    if (isEditMode || typeof $scope.chart.settings === 'undefined') {
+      up.settings = bridgepicassospec(layout, $scope.$parent.options.direction, isEditMode);
     }
 
     $scope.chart.update(up);
