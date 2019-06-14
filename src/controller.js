@@ -54,7 +54,8 @@ export default ['$scope', '$element', function($scope, $element) {
     }
 
     if (isEditMode || typeof $scope.chart.settings === 'undefined') {
-      up.settings = bridgepicassospec(layout, $scope.$parent.options.direction, isEditMode);
+      up.settings = bridgepicassospec(
+        $scope.chart.element, layout, $scope.$parent.options.direction, isEditMode);
     }
 
     $scope.chart.update(up);

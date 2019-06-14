@@ -1,7 +1,7 @@
 import ThemeManager from './theme';
 import { interactionsSetup } from './interactions.js';
 
-export default function (layout, direction, isEditMode) {
+export default function (element, layout, direction, isEditMode) {
   let labels = {
     startvalue: layout.labelsshow ? "Start Value" : layout.startName,
     endvalue: layout.labelsshow ? "End Value" : layout.endName,
@@ -356,11 +356,18 @@ export default function (layout, direction, isEditMode) {
         data: [labels.startvalue, labels.positive, labels.negative, labels.endvalue],
         range: [colors.startvalue, colors.positive, colors.negative, colors.endvalue]
       },
+      key: 'legend',
       type: 'legend-cat',
       show: layout.legend.show,
       layout: {
         dock: layout.legend.dock === "auto" ? "top" : layout.legend.dock,
         displayOrder: 2
+      },
+      mounted() {
+        element.querySelector('[data-component-key=legend][data-action=next]').addEventListener(
+          'click', () => this.emit('next'));
+        element.querySelector('[data-component-key=legend][data-action=prev]').addEventListener(
+          'click', () => this.emit('prev'));
       },
       settings: {
         layout: { // Optional
@@ -388,19 +395,15 @@ export default function (layout, direction, isEditMode) {
             size: 12, // Optional
           },
         },
-        title: { // Optional
-          /* Whether to show the title */
-          show: false, // Optional
-          /* Title text. Defaults to the title of the provided data field */
-          //text: /* string */ , // Optional
-          /* Horizontal alignment of the text. Allowed values are `'start'`, `'middle'` and `'end'` */
-          anchor: 'start',
-          /* Word break rule, how to apply line break if label text overflows its maxWidth property. Either `'break-word'` or `'break-all'` */
-          wordBreak: 'none', // Optional
-          /* Max number of lines allowed if label is broken into multiple lines, is only appled when `wordBreak` is not set to `'none'` */
-          maxLines: 2, // Optional
-          /* Maximum width of title, in px */
-          maxWidth: 156, // Optional
+        navigation: {
+          button: {
+            class: { 'lui-fade-button': true },
+            content: (h, state) => {
+              return h('span', {
+                'class': `lui-icon lui-icon--triangle-${state.direction}`
+              });
+            }
+          }
         }
       }
     },
