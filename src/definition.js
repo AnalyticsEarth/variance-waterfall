@@ -47,7 +47,7 @@ define([], function () {
           },
           subtotalColor: {
             ref: "color.subtotal.paletteColor",
-            label: "Start Value Color",
+            label: "Start value color",
             type: "object",
             component: "color-picker",
             dualOutput: true,
@@ -59,7 +59,7 @@ define([], function () {
           },
           subtotalEndColor: {
             ref: "color.subtotalEnd.paletteColor",
-            label: "End Value Color",
+            label: "End value color",
             type: "object",
             component: "color-picker",
             dualOutput: true,
@@ -200,9 +200,9 @@ define([], function () {
           startName: {
             ref: "startName",
             type: "string",
-            label: "Start Value Label",
+            label: "Start value label",
             expression: "optional",
-            defaultValue: "Start Value",
+            defaultValue: "Start value",
             show: function e(t) {
               return !t.labelsshow;
             }
@@ -210,9 +210,9 @@ define([], function () {
           endName: {
             ref: "endName",
             type: "string",
-            label: "End Value Label",
+            label: "End value label",
             expression: "optional",
-            defaultValue: "End Value",
+            defaultValue: "End value",
             show: function e(t) {
               return !t.labelsshow;
             }
@@ -220,9 +220,9 @@ define([], function () {
           posName: {
             ref: "posName",
             type: "string",
-            label: "Positive Label",
+            label: "Positive label",
             expression: "optional",
-            defaultValue: "Positive Variance",
+            defaultValue: "Positive variance",
             show: function e(t) {
               return !t.labelsshow;
             }
@@ -230,9 +230,9 @@ define([], function () {
           negName: {
             ref: "negName",
             type: "string",
-            label: "Negative Label",
+            label: "Negative label",
             expression: "optional",
-            defaultValue: "Negative Variance",
+            defaultValue: "Negative variance",
             show: function e(t) {
               return !t.labelsshow;
             }
@@ -249,7 +249,7 @@ define([], function () {
       title: {
         ref: "measureAxis.title",
         type: "string",
-        label: "Axis Title",
+        label: "Axis title",
         defaultValue: "",
         expression: "optional"
       }
@@ -310,7 +310,7 @@ define([], function () {
             max: 1,
             disabledRef: "",
             description: () => {
-              return "Bridge Dimension";
+              return "Bridge dimension";
             }
           },
           measures: {
@@ -318,7 +318,7 @@ define([], function () {
             max: 2,
             disabledRef: "",
             description: (a, b) => {
-              return ["Start Value", "End Value"][b];
+              return ["Start value", "End value"][b];
             },
             items: {
               variance: {
@@ -326,7 +326,7 @@ define([], function () {
                   return b.properties.qHyperCubeDef.qMeasures[0] == a;
                 },
                 type: "string",
-                label: "Variance Formula",
+                label: "Variance formula",
                 component: "expression",
                 ref: "qAttributeExpressions.0.qExpression",
                 defaultValue: () => {
