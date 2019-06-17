@@ -50,6 +50,7 @@ var interactionsSetup = function() {
 
 var enableSelectionOnFirstDimension = function(that, chart, brush, layout) {
   var chartBrush = chart.brush(brush);
+
   chartBrush.on('start', (x) => {});
   chartBrush.on('update', (added, removed) => {
     var selection = pq.selections(chartBrush)[0];

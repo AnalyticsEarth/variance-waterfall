@@ -314,25 +314,12 @@ define([], function () {
             }
           },
           measures: {
+            uses: "measures",
             min: 2,
             max: 2,
             disabledRef: "",
             description: (a, b) => {
               return ["Start value", "End value"][b];
-            },
-            items: {
-              variance: {
-                show: (a, b) => {
-                  return b.properties.qHyperCubeDef.qMeasures[0] == a;
-                },
-                type: "string",
-                label: "Variance formula",
-                component: "expression",
-                ref: "qAttributeExpressions.0.qExpression",
-                defaultValue: () => {
-                  return "num(Column(2) - Column(1),'#,##0.00')";
-                }
-              }
             }
           }
         }
