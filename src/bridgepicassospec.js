@@ -364,10 +364,14 @@ export default function (element, layout, direction, isEditMode) {
         displayOrder: 2
       },
       mounted() {
-        element.querySelector('[data-component-key=legend][data-action=next]').addEventListener(
-          'click', () => this.emit('next'));
-        element.querySelector('[data-component-key=legend][data-action=prev]').addEventListener(
-          'click', () => this.emit('prev'));
+        const nextEl = element.querySelector('[data-component-key=legend][data-action=next]');
+        if (nextEl) {
+          nextEl.addEventListener('click', () => this.emit('next'));
+        }
+        const prevEl = element.querySelector('[data-component-key=legend][data-action=prev]');
+        if (prevEl) {
+          prevEl.addEventListener('click', () => this.emit('prev'));
+        }
       },
       settings: {
         layout: { // Optional
