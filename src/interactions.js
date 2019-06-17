@@ -3,34 +3,47 @@ import pq from 'picasso-plugin-q';
 var interactionsSetup = function() {
   "use strict";
   let rangeRef = 'rangex';
-  var interactions = [{
-    type: 'hammer',
-    gestures:[{
-      type: 'Pan',
-      options:{
-        event: 'range',
-        direction: 2 | 4
-      },
-      events:{
-        rangestart: function(e){
-          if (typeof this.chart.component(rangeRef) != 'undefined') {
-            this.chart.component(rangeRef).emit('rangeStart', e);
-          }
+  var interactions = [
+    {
+      type: 'hammer',
+      gestures:[{
+        type: 'Pan',
+        options:{
+          event: 'range',
+          direction: 2 | 4
         },
-        rangemove: function(e){
-          if (typeof this.chart.component(rangeRef) != 'undefined') {
-            this.chart.component(rangeRef).emit('rangeMove', e);
-          }
-        },
-        rangeend: function(e){
-          if (typeof this.chart.component(rangeRef) != 'undefined') {
-            this.chart.component(rangeRef).emit('rangeEnd', e);
+        events:{
+          rangestart: function(e){
+            if (typeof this.chart.component(rangeRef) != 'undefined') {
+              this.chart.component(rangeRef).emit('rangeStart', e);
+            }
+          },
+          rangemove: function(e){
+            if (typeof this.chart.component(rangeRef) != 'undefined') {
+              this.chart.component(rangeRef).emit('rangeMove', e);
+            }
+          },
+          rangeend: function(e){
+            if (typeof this.chart.component(rangeRef) != 'undefined') {
+              this.chart.component(rangeRef).emit('rangeEnd', e);
+            }
           }
         }
+      }]
+    },
+    {
+      type: 'native',
+      events: {
+        mousemove: function(e) {
+          const tooltip = this.chart.component('tooltip');
+          tooltip.emit('show', e);
+        },
+        mouseleave: function(e) {
+          const tooltip = this.chart.component('tooltip');
+          tooltip.emit('hide');
+        }
       }
-    }]
-
-  }];
+    }];
 
   return interactions;
 };
