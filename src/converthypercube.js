@@ -45,6 +45,7 @@ class ConvertHypercube {
       qMax: dimInfo.qMax,
       qMin: dimInfo.qMin,
       qSortIndicator: dimInfo.qSortIndicator,
+      qLocked: dimInfo.qLocked,
       qStateCounts: {
         qAlternative: dimInfo.qStateCounts.qAlternative,
         qDeselected: dimInfo.qStateCounts.qDeselected,
