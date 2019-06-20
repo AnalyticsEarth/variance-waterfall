@@ -190,6 +190,9 @@ export default function (element, layout, direction, isEditMode) {
         }]),
         consume: [{
           context: 'highlight',
+          filter: function (d) {
+            return d.data.value >= -2;
+          },
           style: {
             inactive: {
               opacity: 0.3
@@ -209,7 +212,6 @@ export default function (element, layout, direction, isEditMode) {
           width: 1,
           minHeightPx: 2,
           fill: function (d) {
-            //console.log(d);
             if (d.datum.value === -4) {
               return colors.startvalue;
             } else if (d.datum.value === -5) {
