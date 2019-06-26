@@ -47,7 +47,12 @@ class ThemeManager {
 
   static colorFromTheme(index) {
     if (typeof ThemeManager.qlikTheme != 'undefined') {
-      return ThemeManager.qlikTheme.properties.palettes.ui[0].colors[index - 1];
+      const colors = ThemeManager.qlikTheme.properties.palettes.ui[0].colors;
+      let i = index;
+      if (colors[0] !== "none") {
+        i--;
+      }
+      return ThemeManager.qlikTheme.properties.palettes.ui[0].colors[i];
     } else {
       return colors[index];
     }
