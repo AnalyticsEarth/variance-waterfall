@@ -55,7 +55,10 @@ export default ['$scope', '$element', function($scope, $element) {
 
     if (isEditMode || typeof $scope.chart.settings === 'undefined') {
       up.settings = bridgepicassospec(
-        $scope.chart.element, layout, $scope.$parent.options.direction, isEditMode);
+        $scope.chart.element,
+        layout,
+        $scope.$parent.options.direction,
+        !isEditMode && !$scope.backendApi.isSnapshot && !layout.qHyperCube.qDimensionInfo[0].qLocked);
     }
 
     $scope.chart.update(up);

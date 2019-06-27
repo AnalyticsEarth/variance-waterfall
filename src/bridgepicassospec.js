@@ -1,7 +1,7 @@
 import ThemeManager from './theme';
 import { interactionsSetup } from './interactions.js';
 
-export default function (element, layout, direction, isEditMode) {
+export default function (element, layout, direction, isInteractable) {
   let labels = {
     startvalue: layout.labelsshow ? "Start Value" : layout.startName,
     endvalue: layout.labelsshow ? "End Value" : layout.endName,
@@ -34,7 +34,7 @@ export default function (element, layout, direction, isEditMode) {
   }
 
   return {
-    interactions: (isEditMode ? [] : interactionsSetup()),
+    interactions: (!isInteractable ? [] : interactionsSetup()),
     scales: {
       v: {
         data: {
@@ -110,7 +110,7 @@ export default function (element, layout, direction, isEditMode) {
         displayOrder: 0
       },
       brush: {
-        trigger: (isEditMode ? [] : [{
+        trigger: (!isInteractable ? [] : [{
           on: 'tap',
           contexts: ['highlight'],
           globalPropagation: 'stop',
@@ -182,7 +182,7 @@ export default function (element, layout, direction, isEditMode) {
         }
       },
       brush: {
-        trigger: (isEditMode ? [] : [{
+        trigger: (!isInteractable ? [] : [{
           on: 'tap',
           contexts: ['highlight'],
           globalPropagation: 'stop',
