@@ -28,8 +28,8 @@ define([], function () {
             component: "color-picker",
             dualOutput: true,
             defaultValue: {
-              index: 6,
-              color: null
+              index: -1,
+              color: "#4477aa"
             },
             show: (a) => !a.color.auto
           },
