@@ -19,4 +19,7 @@ export default {
     snapshotLayout.snapshotData.varianceCube = await initVarianceCube(this, snapshotLayout);
     return snapshotLayout;
   },
+  clearSelectedValues() {
+    this.$scope.chartBrush.clear();
+  }
 };
