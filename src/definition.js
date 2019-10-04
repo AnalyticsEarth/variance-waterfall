@@ -287,7 +287,7 @@ define([], function () {
         component: 'text'
       },
       paragraph1: {
-        label: `Variance waterfall is a Qlik Sense extension used for displaying variance between two
+        label: `Variance waterfall is a Qlik Sense chart used for displaying variance between two
           metrics, walking through a set of dimension values.`,
         component: 'text'
       },
