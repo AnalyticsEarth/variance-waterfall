@@ -73,7 +73,7 @@ class ConvertHypercube {
       qMax: max, //mesInfo.qMax,
       qMin: min, //mesInfo.qMin,
       qSortIndicator: mesInfo.qSortIndicator,
-      qNumFormat: {
+      qNumFormat: mesInfo.qNumFormat && {
         qDec: mesInfo.qNumFormat.qDec,
         qFmt: mesInfo.qNumFormat.qFmt,
         qThou: mesInfo.qNumFormat.qThou,
