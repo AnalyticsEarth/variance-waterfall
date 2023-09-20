@@ -7,7 +7,7 @@ module.exports = {
     },
     sourceType: "module"
   },
-  parser: "@babel/eslint-parser",
+  parser: "babel-eslint",
   env: {
     browser: true,
     es6: true,
@@ -58,6 +58,5 @@ module.exports = {
   },
   extends: [
     "eslint:recommended"
-  ],
-  plugins: ["@babel"],
+  ]
 }

@@ -1,4 +1,3 @@
-/* eslint-disable @babel/no-invalid-this */
 export default function ($element, layout) {
   if (this._pureLayout !== this.backendApi.model.pureLayout) {
     return this.paint($element, layout);
