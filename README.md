@@ -12,7 +12,8 @@ If you want to do code changes to the extension follow these simple steps to get
 1. Create a new app and add Variance waterfall to a sheet.
 2. Clone the repository
 3. Run `npm install`
-4. Run `npm run build` - to build a dev-version to the /dist folder.
+4. Run `npm run build` - to build a dev-version to the /dist folder. 
+   If the source map file is required run `export NODE_ENV=development && npm run build` instead.
 5. Move the content of the /dist folder to the extension directory. Usually in `C:/Users/<user>/Documents/Qlik/Sense/Extensions/qlik-variance-waterfall`.
 
 # Original authors
