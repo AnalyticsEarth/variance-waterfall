@@ -33,6 +33,14 @@ export default function (element, layout, direction, isInteractable) {
     dockRight = 'left';
   }
 
+  const formatters = {
+    'minor': {
+      data: {
+        fields: ['qMeasureInfo/0', 'qMeasureInfo/1']
+      },
+    },
+  };
+
   return {
     interactions: (!isInteractable ? [] : interactionsSetup()),
     scales: {
@@ -134,6 +142,7 @@ export default function (element, layout, direction, isInteractable) {
     {
       type: 'axis',
       scale: 'v',
+      formatter: 'minor',
       layout: {
         dock: layout.measureAxis.dock === 'near' ? dockLeft : dockRight,
         displayOrder: 0
@@ -466,6 +475,7 @@ export default function (element, layout, direction, isInteractable) {
           transition: 'opacity 50ms ease-in'
         }
       }
-    }]
+    }],
+    formatters
   };
 }

@@ -16,6 +16,7 @@ export default ['$scope', '$element', function($scope, $element) {
   $scope.updated = false;
 
   $scope.app = qlik.currApp(this);
+  const localeInfo = $scope.app.model.layout.qLocaleInfo;
 
   picasso.use(pq);
   picasso.use(picassoHammer);
@@ -49,6 +50,9 @@ export default ['$scope', '$element', function($scope, $element) {
       up.data = [{
         type: 'q',
         key: 'qHyperCube',
+        config: {
+          localeInfo,
+        },
         data: await initVarianceCube($scope, layout)
       }];
     }
