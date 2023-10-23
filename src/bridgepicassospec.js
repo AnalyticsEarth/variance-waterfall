@@ -1,7 +1,7 @@
 import ThemeManager from './theme';
 import { interactionsSetup } from './interactions.js';
 
-export default function (element, layout, direction, isInteractable) {
+export default function (element, layout, direction, isInteractable, ds) {
   let labels = {
     startvalue: layout.labelsshow ? "Start Value" : layout.startName,
     endvalue: layout.labelsshow ? "End Value" : layout.endName,
@@ -33,12 +33,26 @@ export default function (element, layout, direction, isInteractable) {
     dockRight = 'left';
   }
 
-  const formatters = {
-    'minor': {
-      data: {
-        fields: ['qMeasureInfo/0', 'qMeasureInfo/1']
-      },
-    },
+  const shouldUseFormat = (measureInfo) => !measureInfo.isCustomFormatted && (measureInfo.qIsAutoFormat || measureInfo.qNumFormat.qType === 'U');
+
+  const startLabelFn = (cell) => {
+    const field = 'qMeasureInfo/0';
+    const measureInfo = ds.field(field).raw();
+    const formatter = ds.field(field).formatter();
+    const useFormatter = shouldUseFormat(measureInfo);
+    const formatCell = (cell) => (cell.qNum === 'NaN' ? '-' : formatter(cell.qNum));
+    const ret = (useFormatter ? formatCell(cell) : cell.qText);
+    return ret;
+  };
+
+  const endLabelFn = (cell) => {
+    const field = 'qMeasureInfo/1';
+    const measureInfo = ds.field(field).raw();
+    const formatter = ds.field(field).formatter();
+    const useFormatter = shouldUseFormat(measureInfo);
+    const formatCell = (cell) => (cell.qNum === 'NaN' ? '-' : formatter(cell.qNum));
+    const ret = (useFormatter ? formatCell(cell) : cell.qText);
+    return ret;
   };
 
   return {
@@ -142,7 +156,6 @@ export default function (element, layout, direction, isInteractable) {
     {
       type: 'axis',
       scale: 'v',
-      formatter: 'minor',
       layout: {
         dock: layout.measureAxis.dock === 'near' ? dockLeft : dockRight,
         displayOrder: 0
@@ -179,13 +192,16 @@ export default function (element, layout, direction, isInteractable) {
           field: 'qDimensionInfo/0',
           props: {
             start: {
-              field: 'qMeasureInfo/0'
+              field: 'qMeasureInfo/0',
+              label: startLabelFn
             },
             end: {
-              field: 'qMeasureInfo/1'
+              field: 'qMeasureInfo/1',
+              label: endLabelFn
             },
             var: {
-              field: 'qMeasureInfo/2'
+              field: 'qMeasureInfo/2',
+              label: endLabelFn
             }
           }
         }
@@ -475,7 +491,6 @@ export default function (element, layout, direction, isInteractable) {
           transition: 'opacity 50ms ease-in'
         }
       }
-    }],
-    formatters
+    }]
   };
 }
