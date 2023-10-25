@@ -35,24 +35,22 @@ export default function (element, layout, direction, isInteractable, ds) {
 
   const shouldUseFormat = (measureInfo) => !measureInfo.isCustomFormatted && (measureInfo.qIsAutoFormat || measureInfo.qNumFormat.qType === 'U');
 
-  const startLabelFn = (cell) => {
-    const field = 'qMeasureInfo/0';
+  const setFormatCell = (cell, field) => {
     const measureInfo = ds.field(field).raw();
     const formatter = ds.field(field).formatter();
     const useFormatter = shouldUseFormat(measureInfo);
     const formatCell = (cell) => (cell.qNum === 'NaN' ? '-' : formatter(cell.qNum));
-    const ret = (useFormatter ? formatCell(cell) : cell.qText);
-    return ret;
+    return (useFormatter ? formatCell(cell) : cell.qText);
+  };
+  
+  const startLabelFn = (cell) => {
+    const field = 'qMeasureInfo/1';
+    return setFormatCell(cell, field);
   };
 
   const endLabelFn = (cell) => {
-    const field = 'qMeasureInfo/1';
-    const measureInfo = ds.field(field).raw();
-    const formatter = ds.field(field).formatter();
-    const useFormatter = shouldUseFormat(measureInfo);
-    const formatCell = (cell) => (cell.qNum === 'NaN' ? '-' : formatter(cell.qNum));
-    const ret = (useFormatter ? formatCell(cell) : cell.qText);
-    return ret;
+    const field = 'qMeasureInfo/0';
+    return setFormatCell(cell, field);
   };
 
   return {
@@ -187,7 +185,7 @@ export default function (element, layout, direction, isInteractable, ds) {
       layout: {
         displayOrder: 1
       },
-      data: {
+      data: { 
         extract: {
           field: 'qDimensionInfo/0',
           props: {
