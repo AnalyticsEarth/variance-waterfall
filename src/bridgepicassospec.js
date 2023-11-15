@@ -347,7 +347,7 @@ export default function (element, layout, direction, isInteractable, ds) {
                 label({
                   data
                 }) {
-                  return data ? data.end.label : '';
+                  return data ? data.var.label : '';
                 },
                 placements: [ // label placements in prio order. Label will be placed in the first place it fits into
                   {
